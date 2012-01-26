@@ -1,0 +1,111 @@
+##############################################################################
+CFLAGS += -W -Wall --std=gnu99 -Os
+CFLAGS += -ffunction-sections -fshort-enums
+
+LDFLAGS += -Wl,--gc-sections
+
+##############################################################################
+#
+# atmega128rfa1
+#
+ifeq ($(HAL), ATMEGA128RFA1)
+  CC = avr-gcc
+  OBJCOPY = avr-objcopy
+  SIZE = avr-size
+
+  MCU = atmega128rfa1
+  HAL_PATH = atmega128rfa1
+
+  CFLAGS += -mmcu=$(MCU)
+  LDFLAGS += -mmcu=$(MCU)
+
+  INCLUDES += \
+    -I$(STACK_PATH)/hal/atmega128rfa1
+
+  SRCS += \
+    $(STACK_PATH)/hal/atmega128rfa1/hal.c
+
+#
+# atmega328p
+#
+else ifeq ($(HAL), ATMEGA328P)
+  CC = avr-gcc
+  OBJCOPY = avr-objcopy
+  SIZE = avr-size
+
+  MCU = atmega328p
+
+  CFLAGS += -mmcu=$(MCU)
+  LDFLAGS += -mmcu=$(MCU)
+
+  INCLUDES += \
+    -I$(STACK_PATH)/hal/atmega328p
+
+  SRCS += \
+    $(STACK_PATH)/hal/atmega328p/hal.c
+
+#
+# lpc111x
+#
+else ifeq ($(HAL), LPC111X)
+  CC = arm-none-eabi-gcc
+  OBJCOPY = arm-none-eabi-objcopy
+  SIZE = arm-none-eabi-size
+
+  MCU = cortex-m0
+
+  CFLAGS += -mcpu=$(MCU) -mthumb
+  LDFLAGS += -mcpu=$(MCU) -mthumb
+
+  INCLUDES += \
+    -I$(STACK_PATH)/hal/lpc111x
+
+  SRCS += \
+    $(STACK_PATH)/hal/lpc111x/hal.c \
+    $(STACK_PATH)/hal/lpc111x/startup.c
+
+else
+  $(error unsupported HAL) 
+endif
+
+##############################################################################
+ifeq ($(PHY), ATMEGA128RFA1)
+  PHY_PATH = atmega128rfa1
+else ifeq ($(PHY), AT86RF230)
+  PHY_PATH = at86rf230
+else ifeq ($(PHY), AT86RF231)
+  PHY_PATH = at86rf231
+else
+  $(error unsupported PHY) 
+endif
+
+##############################################################################
+ifeq ($(FREQ), 8_MHz)
+  F_CPU = 8000000
+else ifeq ($(FREQ), 12_MHz)
+  F_CPU = 12000000
+else
+  $(error unsupported FREQ) 
+endif
+
+##############################################################################
+DEFINES += \
+  -DHAL_$(HAL) \
+  -DPHY_$(PHY) \
+  -DBOARD_$(BOARD) \
+  -DF_CPU=$(F_CPU)
+
+INCLUDES += \
+  -I$(STACK_PATH)/phy/$(PHY_PATH)  \
+  -I$(STACK_PATH)/simple
+
+SRCS += \
+  $(STACK_PATH)/phy/$(PHY_PATH)/phy.c \
+  $(STACK_PATH)/simple/sysQueue.c \
+  $(STACK_PATH)/simple/sysTimer.c \
+  $(STACK_PATH)/simple/sysTaskManager.c \
+  $(STACK_PATH)/simple/sysMem.c \
+  $(STACK_PATH)/simple/nwk.c
+
+CFLAGS += $(INCLUDES) $(DEFINES)
+
