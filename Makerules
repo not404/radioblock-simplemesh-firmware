@@ -23,7 +23,8 @@ ifeq ($(HAL), ATMEGA128RFA1)
     -I$(STACK_PATH)/hal/atmega128rfa1
 
   SRCS += \
-    $(STACK_PATH)/hal/atmega128rfa1/hal.c
+    $(STACK_PATH)/hal/atmega128rfa1/hal.c \
+    $(STACK_PATH)/hal/atmega128rfa1/uart.c
 
 #
 # atmega328p
@@ -42,7 +43,8 @@ else ifeq ($(HAL), ATMEGA328P)
     -I$(STACK_PATH)/hal/atmega328p
 
   SRCS += \
-    $(STACK_PATH)/hal/atmega328p/hal.c
+    $(STACK_PATH)/hal/atmega328p/hal.c \
+    $(STACK_PATH)/hal/atmega328p/uart.c
 
 #
 # lpc111x
@@ -62,7 +64,8 @@ else ifeq ($(HAL), LPC111X)
 
   SRCS += \
     $(STACK_PATH)/hal/lpc111x/hal.c \
-    $(STACK_PATH)/hal/lpc111x/startup.c
+    $(STACK_PATH)/hal/lpc111x/startup.c \
+    $(STACK_PATH)/hal/lpc111x/uart.c
 
 else
   $(error unsupported HAL) 

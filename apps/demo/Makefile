@@ -14,6 +14,7 @@ FREQ = 12_MHz
 
 #BOARD = RCB_MEGARF
 #BOARD = TRT_DISK
+BOARD = CMD_RADIOLEGO
 
 ##############################################################################
 .PHONY: all clean size

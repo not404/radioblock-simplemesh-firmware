@@ -36,6 +36,7 @@
 #include "sysTimer.h"
 #include "sysMem.h"
 #include "sysTaskManager.h"
+#include "uart.h"
 
 /*****************************************************************************
 *****************************************************************************/
@@ -62,32 +63,9 @@ AppMessage_t msg;
 
 /*****************************************************************************
 *****************************************************************************/
-void log_open(void)
-{
-#if ADDR == 0
-  UBRR1H = 0;
-  UBRR1L = 25;
-  UCSR1A = (1 << U2X1);
-  UCSR1B = (1 << TXEN1);
-  UCSR1C = (3 << UCSZ10);
-#endif
-}
-
-/*****************************************************************************
-*****************************************************************************/
-void write(uint8_t message)
-{
-#if ADDR == 0
-  UDR1 = message;
-  while (!(UCSR1A & (1 << UDRE1)));
-#endif
-  (void)message;
-}
-
-/*****************************************************************************
-*****************************************************************************/
 void print(const char *format, ...)
 {
+
 #if ADDR == 0
   uint8_t str[70];
   char *ptr = (char *)str;
@@ -96,8 +74,9 @@ void print(const char *format, ...)
 
   va_start(ap, format);
   len = vsnprintf(ptr, sizeof(str), format, ap);
-  while (len--)
-    write(*ptr++);
+  UARTSend(ptr, len);
+  //while (len--)
+  //  write(*ptr++);
 #endif
   (void)format;
 }
