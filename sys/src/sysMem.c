@@ -53,8 +53,14 @@ typedef struct PACK SysMemChunk_t
 
 /*****************************************************************************
 *****************************************************************************/
-static uint32_t sysMemPool[SYS_MEM_POOL_SIZE/4];
-static uint32_t *sysMemPoolEnd;
+/* Pointer to 32-bit variable resulted in memory overwrite. Adding to
+ * (uint32_t *) type results in pointer incrementing by 4x what code was
+ * expecting. Changed pointers to uint8_t * for now - this is potentially
+ * less efficient as we always generate properly aligned pointers, but the resulting
+ * code may not know that, and use the slower always-safe access.
+ *TODO: check this & fix if needed for more efficient code. */
+static uint8_t sysMemPool[SYS_MEM_POOL_SIZE];
+static uint8_t *sysMemPoolEnd;
 
 /*****************************************************************************
 *****************************************************************************/
@@ -73,7 +79,7 @@ void SYS_MemInit(void)
 uint8_t *SYS_MemAlloc(uint8_t size)
 {
   SysMemChunk_t *chunk;
-  uint32_t *ptr = sysMemPool;
+  uint8_t *ptr = sysMemPool;
 
   size = (size + sizeof(SysMemChunk_t) + 3) & ~3; // TODO: replace by proper alignment mechanism
 
@@ -108,7 +114,7 @@ uint8_t *SYS_MemAlloc(uint8_t size)
 void SYS_MemFree(uint8_t *mem)
 {
   SysMemChunk_t *chunk, *prev = NULL;
-  uint32_t *ptr = sysMemPool;
+  uint8_t *ptr = sysMemPool;
 
   mem -= sizeof(SysMemChunk_t);
 
@@ -116,7 +122,7 @@ void SYS_MemFree(uint8_t *mem)
   {
     chunk = (SysMemChunk_t *)ptr;
 
-    if ((uint32_t *)mem == ptr)
+    if ((uint8_t *)mem == ptr)
     {
       SysMemChunk_t *next = (SysMemChunk_t *)(ptr + chunk->size);
 
