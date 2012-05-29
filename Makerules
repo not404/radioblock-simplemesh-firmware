@@ -1,6 +1,6 @@
 ##############################################################################
 CFLAGS += -W -Wall --std=gnu99 -Os
-CFLAGS += -ffunction-sections -fshort-enums
+CFLAGS += -ffunction-sections -fdata-sections -fshort-enums
 
 LDFLAGS += -Wl,--gc-sections
 
@@ -20,11 +20,10 @@ ifeq ($(HAL), ATMEGA128RFA1)
   LDFLAGS += -mmcu=$(MCU)
 
   INCLUDES += \
-    -I$(STACK_PATH)/hal/atmega128rfa1
+    -I$(STACK_PATH)/hal/atmega128rfa1/include
 
   SRCS += \
-    $(STACK_PATH)/hal/atmega128rfa1/hal.c \
-    $(STACK_PATH)/hal/atmega128rfa1/uart.c
+    $(STACK_PATH)/hal/atmega128rfa1/src/hal.c
 
 #
 # atmega328p
@@ -40,16 +39,15 @@ else ifeq ($(HAL), ATMEGA328P)
   LDFLAGS += -mmcu=$(MCU)
 
   INCLUDES += \
-    -I$(STACK_PATH)/hal/atmega328p
+    -I$(STACK_PATH)/hal/atmega328p/include
 
   SRCS += \
-    $(STACK_PATH)/hal/atmega328p/hal.c \
-    $(STACK_PATH)/hal/atmega328p/uart.c
+    $(STACK_PATH)/hal/atmega328p/src/hal.c
 
 #
-# lpc111x
+# lpc1114
 #
-else ifeq ($(HAL), LPC111X)
+else ifeq ($(HAL), LPC1114)
   CC = arm-none-eabi-gcc
   OBJCOPY = arm-none-eabi-objcopy
   SIZE = arm-none-eabi-size
@@ -60,15 +58,18 @@ else ifeq ($(HAL), LPC111X)
   LDFLAGS += -mcpu=$(MCU) -mthumb
 
   INCLUDES += \
-    -I$(STACK_PATH)/hal/lpc111x
+    -I$(STACK_PATH)/hal/lpc111x/include
 
   SRCS += \
-    $(STACK_PATH)/hal/lpc111x/hal.c \
-    $(STACK_PATH)/hal/lpc111x/startup.c \
-    $(STACK_PATH)/hal/lpc111x/uart.c
+    $(STACK_PATH)/hal/lpc111x/src/hal.c \
+    $(STACK_PATH)/hal/lpc111x/src/halPhy.c \
+    $(STACK_PATH)/hal/lpc111x/src/halTimer.c \
+    $(STACK_PATH)/hal/lpc111x/src/startup.c \
+    $(STACK_PATH)/hal/lpc111x/src/halUart.c \
+    $(STACK_PATH)/hal/lpc111x/src/halSleep.c
 
 else
-  $(error unsupported HAL) 
+  $(error unsupported HAL)
 endif
 
 ##############################################################################
@@ -79,7 +80,7 @@ else ifeq ($(PHY), AT86RF230)
 else ifeq ($(PHY), AT86RF231)
   PHY_PATH = at86rf231
 else
-  $(error unsupported PHY) 
+  $(error unsupported PHY)
 endif
 
 ##############################################################################
@@ -88,7 +89,7 @@ ifeq ($(FREQ), 8_MHz)
 else ifeq ($(FREQ), 12_MHz)
   F_CPU = 12000000
 else
-  $(error unsupported FREQ) 
+  $(error unsupported FREQ)
 endif
 
 ##############################################################################
@@ -99,16 +100,23 @@ DEFINES += \
   -DF_CPU=$(F_CPU)
 
 INCLUDES += \
-  -I$(STACK_PATH)/phy/$(PHY_PATH)  \
-  -I$(STACK_PATH)/simple
+  -I$(STACK_PATH)/phy/$(PHY_PATH)/include  \
+  -I$(STACK_PATH)/sys/include \
+  -I$(STACK_PATH)/nwk/include
 
 SRCS += \
-  $(STACK_PATH)/phy/$(PHY_PATH)/phy.c \
-  $(STACK_PATH)/simple/sysQueue.c \
-  $(STACK_PATH)/simple/sysTimer.c \
-  $(STACK_PATH)/simple/sysTaskManager.c \
-  $(STACK_PATH)/simple/sysMem.c \
-  $(STACK_PATH)/simple/nwk.c
+  $(STACK_PATH)/phy/$(PHY_PATH)/src/phy.c \
+  $(STACK_PATH)/sys/src/sysQueue.c \
+  $(STACK_PATH)/sys/src/sysTimer.c \
+  $(STACK_PATH)/sys/src/sysTaskManager.c \
+  $(STACK_PATH)/sys/src/sysMem.c \
+  $(STACK_PATH)/nwk/src/nwk.c \
+  $(STACK_PATH)/nwk/src/nwkDataReq.c \
+  $(STACK_PATH)/nwk/src/nwkSecurity.c \
+  $(STACK_PATH)/nwk/src/nwkFrame.c \
+  $(STACK_PATH)/nwk/src/nwkRoute.c \
+  $(STACK_PATH)/nwk/src/nwkRx.c \
+  $(STACK_PATH)/nwk/src/nwkTx.c \
 
 CFLAGS += $(INCLUDES) $(DEFINES)
 
