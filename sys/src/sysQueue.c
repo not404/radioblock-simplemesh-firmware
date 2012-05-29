@@ -31,10 +31,21 @@
  
 #include "sysQueue.h"
 
+//#define QUEUE_DEBUG
+
+#ifdef QUEUE_DEBUG
+int SYS_QueueCount(SYS_Queue_t **queue);
+void SYS_QueueValidate(SYS_Queue_t **queue);
+#else
+#define SYS_QueueCount(a) 0
+#define SYS_QueueValidate(a)
+#endif
+
 /*****************************************************************************
 *****************************************************************************/
 void SYS_QueueAppend(SYS_Queue_t **queue, void *item)
 {
+  SYS_QueueValidate(queue);
   ((SYS_Queue_t *)item)->next = NULL;
 
   if (!*queue)
@@ -48,12 +59,16 @@ void SYS_QueueAppend(SYS_Queue_t **queue, void *item)
       last = last->next;
     last->next = item;
   }
+
+  SYS_QueueValidate(queue);
 }
 
 /*****************************************************************************
 *****************************************************************************/
 void *SYS_QueueRemove(SYS_Queue_t **queue, void *item)
 {
+  SYS_QueueValidate(queue);
+
   if (*queue == item)
   {
     *queue = (*queue)->next;
@@ -69,5 +84,32 @@ void *SYS_QueueRemove(SYS_Queue_t **queue, void *item)
       prev->next = prev->next->next;
   }
 
+  SYS_QueueValidate(queue);
   return item;
 }
+/*****************************************************************************
+*****************************************************************************/
+#ifdef QUEUE_DEBUG
+int SYS_QueueCount(SYS_Queue_t **queue)
+{
+  SYS_QueueValidate(queue);
+
+  int counter = 0;
+  SYS_Queue_t * prev = *queue;
+
+  while (prev) {
+    prev = prev->next;
+    counter++;
+  }
+
+  return counter;
+}
+/*****************************************************************************
+*****************************************************************************/
+void SYS_QueueValidate(SYS_Queue_t **queue)
+{
+  if ((*queue > 0) && (*queue < 0x1000)) {
+    while(1);
+  }
+}
+#endif
