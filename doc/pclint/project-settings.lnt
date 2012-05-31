@@ -1,0 +1,21 @@
+-iapps
+-iapps/demo/include
+-ihal/lpc111x/include
+-inwk/include
+-iphy/include
+-isys/include
+
+//For Eclipse, we change output format of messages
+-"format=LINT %t%(: %f:%l %) %n %m"
+-width(0,0)
+
+// This would allow you to use regexp parser for CDT with the following config:
+//http://www.isystem.com/products/embedded-development-tools/eclipse-ide/regular-expression-error-parser-for-cdt.html
+//info = 1, 2, 3:LINT Info: (.*?):([0-9]+) (.*)\n \
+//       0, 0, 1:LINT Info (.*)\n 
+//warning = 1, 2, 3:LINT Warning: (.*?):([0-9]+) (.*)\n \
+//          0, 0, 1:LINT Warning (.*)\n
+//error = 1, 2, 3:LINT Error: (.*?):([0-9]+) (.*)\n \
+//        0, 0, 1:LINT Error (.*)\n
+
+//-passes(3)

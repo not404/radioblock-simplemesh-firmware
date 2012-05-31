@@ -1,0 +1,11 @@
+BEGIN {S=0}				
+/search starts here:/  {S=1;next;}
+S && /^ /  {				    
+sub("^ ","");				
+gsub("//*","/");			
+sub("\xd$$","");			
+sub("/$$","");				
+printf("--i\"%s\"\n", $$0);		
+next;					
+}						
+S  {exit;}					

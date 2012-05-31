@@ -1,0 +1,30 @@
+// AVR-GCC Specific Project definitions
+-d__AVR_ATmega128RFA1__          // Compiler does this from MCU definition
+-dF_CPU=16000000UL                 // Make file derives this from HZ
+-dPLATFORM=RCBRFA1
+
+-fff
+c:\lint\co-gcc.lnt
+
+
+//Error references: http://gimpel-online.com/MsgRef.html
+
+// Do not warn that zero is given as left argument to operator '+'
+-e835
+
+// bitfields don't need to be ints
+-e46
+
+// Header file locations
+//
+-iC:\WinAVR-20100110\avr\include
+-iC:\WinAVR-20100110\avr\include\avr
+-iC:\WinAVR-20100110\avr\include\compat
+-iC:\WinAVR-20100110\avr\include\util
+-iC:\WinAVR-20100110\lib\gcc\avr\4.3.3\include
+
+
+-esym(526,__builtin_offsetof)
+-esym(628,__builtin_offsetof)
+-esym(526,__builtin_return_address)
+-esym(628,__builtin_return_address)

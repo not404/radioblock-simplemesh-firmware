@@ -1,0 +1,31 @@
+// GCC Specific Project definitions
+-d_SIM_
+-dF_CPU=16000000UL                 // Make file derives this from HZ
+-dTRACE_USE_DYNAMIC=1
+
+-fff
+c:\lint\co-gcc.lnt
+
+
+//Error references: http://gimpel-online.com/MsgRef.html
+
+// Do not warn that zero is given as left argument to operator '+'
+-e835
+
+// bitfields don't need to be ints
+-e46
+
+// Header file locations
+//
+-iC:\MinGW\include
+-iE:\fip\workspaces\fip\verification\simulator\build\win32
++libdir(E:\fip\workspaces\fip\verification\simulator\build\win32)
+
+-esym(526,__builtin_offsetof)
+-esym(628,__builtin_offsetof)
+-esym(526,__builtin_return_address)
+-esym(628,__builtin_return_address)
+
+// Disable errors from curses
+
+-esym(534, wprintw)
