@@ -1,9 +1,0 @@
-!SESSION 2012-05-29 18:06:13.389 -----------------------------------------------
-eclipse.buildId=unknown
-java.version=1.6.0_30
-java.vendor=Sun Microsystems Inc.
-BootLoader constants: OS=win32, ARCH=x86, WS=win32, NL=en_CA
-Command-line arguments:  -os win32 -ws win32 -arch x86
-
-!ENTRY org.eclipse.ui 4 4 2012-05-29 18:06:24.456
-!MESSAGE Unable to find view with id: com.crt.trueview.views.DisassemblyViewer, when creating perspective com.crt.lite.perspective.CRTPerspective
