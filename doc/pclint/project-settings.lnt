@@ -1,8 +1,8 @@
 -iapps
 -iapps/demo/include
 -ihal/lpc111x/include
+-iphy/at86rf230/include
 -inwk/include
--iphy/include
 -isys/include
 
 //For Eclipse, we change output format of messages

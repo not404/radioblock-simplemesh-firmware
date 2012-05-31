@@ -36,6 +36,9 @@
 #include "sysMem.h"
 #include "sysTypes.h"
 
+/*lint --e{826}  Surpress 'pointer conversion' messages, which occur when we
+ *               convert from the mem_pool dec to that type */
+
 /*****************************************************************************
 *****************************************************************************/
 #ifndef SYS_MEM_POOL_SIZE
