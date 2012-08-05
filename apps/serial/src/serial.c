@@ -128,7 +128,7 @@ static uint16_t appCrcCcitt(uint8_t *buf, uint8_t size)
 
   return crc;
 }
-#define ETG
+
 /*****************************************************************************
 *****************************************************************************/
 static void appUartStateMachine(uint8_t byte)
@@ -172,13 +172,7 @@ static void appUartStateMachine(uint8_t byte)
 
     case APP_UART_STATE_READ_CRC_2:
     {
-#ifdef ETG
-      appUartCmdCrc <<= 8;
-      appUartCmdCrc |= byte;
-#else
      appUartCmdCrc |= ((uint16_t)byte << 8);
-#endif
-
       if (appUartCmdCrc == appCrcCcitt(appUartCmdBuffer, appUartCmdSize))
       {
         appUartState = APP_UART_STATE_OK;
@@ -295,6 +289,20 @@ void appUartSendCommand(uint8_t *buf, uint8_t size)
 
 /*****************************************************************************
 *****************************************************************************/
+#ifdef PER_APP
+// Create some variables to hold results of PER testing.
+// The number of frames transmitted is always 250 for histogram purposes.
+uint8_t rssi_buf[28];
+uint8_t lqi_buf[255];
+// For 1,000 frames we just keep some statistic variables.
+// The variables are initialiezed inverse to what values they might have to seed the sorting.
+uint8_t max_lqi = 0;
+uint8_t min_lqi = 255;
+uint8_t max_rssi = 0;
+uint8_t min_rssi = 28;
+uint16_t missed_frames = 0;
+#endif // PER_APP
+
 static bool appDataInd(NWK_DataInd_t *ind)
 {
   AppCommandDataInd_t cmd;
@@ -314,6 +322,25 @@ static bool appDataInd(NWK_DataInd_t *ind)
   cmd.lqi = ind->lqi;
   cmd.rssi = ind->rssi;
   memcpy(cmd.payload, ind->data, ind->size);
+
+#ifdef LED_APP
+  // ETG
+  // Interrogate the payload. If byte [0] = 'O', turn the LED off,
+  // if byte [0] = 'F' turn the LED on.
+  if (cmd.payload[0] == 'O')
+  	ledOn();
+  if (cmd.payload[0] == 'F')
+  	ledOff();
+#endif // LED_APP
+
+#ifdef PER_APP
+  // This records the "histogram" of received LQI & RSSI for up to 250 frames.
+  lqi_buf[cmd.lqi]++;
+  rssi_buf[cmd.rssi]++;
+  // Add logic here for assigning min/max lqi/rssi and for calculating missed frames.
+  // The first two bytes of frame payload should have the monotonically increasing frame count!
+
+#endif // PER_APP
 
   appUartSendCommand((uint8_t *)&cmd, sizeof(AppCommandDataIndHeader_t) + ind->size);
 
