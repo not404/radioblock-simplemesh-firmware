@@ -36,6 +36,18 @@
 
 /*****************************************************************************
 *****************************************************************************/
+#ifdef PER_APP
+// A global variable to tell whether the app is using the UART or OTA.
+uint8_t ota_enabled;
+
+// Create some variables to hold results of PER testing.
+// The number of frames transmitted is always 250 for histogram purposes.
+uint8_t rssi_buf[256]; // These are negative numbers. Convert in pc app
+uint8_t lqi_buf[256];
+#endif
+
+/*****************************************************************************
+*****************************************************************************/
 typedef enum AppStatus_t
 {
   APP_STATUS_SUCESS               = 0x00,

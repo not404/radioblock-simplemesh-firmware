@@ -36,10 +36,10 @@
 *****************************************************************************/
 #define APP_PORT                       1
 
-#define APP_DEFAULT_ADDR               0
+#define APP_DEFAULT_ADDR               2
 #define APP_DEFAULT_PANID              0
 #define APP_DEFAULT_CHANNEL            0x0f
-#define APP_DEFAULT_RX_STATE           false
+#define APP_DEFAULT_RX_STATE           true
 #define APP_DEFAULT_TX_POWER           +3
 #define APP_DEFAULT_ACK_STATE          1
 #define APP_DEFAULT_SECURITY_KEY       "SimpleMesh_12345"
@@ -60,7 +60,11 @@
 #define NWK_ACK_WAIT_TIME                       1000   // 1 second
 #define NWK_MAX_PORTS_AMOUNT                    16
 
-#define SYS_MEM_POOL_SIZE                       2000
+#ifdef PER_APP
+	#define SYS_MEM_POOL_SIZE						500
+#else
+	#define SYS_MEM_POOL_SIZE                       2000
+#endif // PER_APP
 
 #define HAL_UART_ENABLE
 

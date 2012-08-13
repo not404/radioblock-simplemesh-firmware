@@ -223,6 +223,12 @@ static void appUartTimerHandler(SYS_Timer_t *timer)
 *****************************************************************************/
 static void appUartRxCallback(uint16_t bytes)
 {
+// If a character is received over the UART then turn off the PER_APP code.
+// "ota_enabled" is a flag for this.
+#ifdef PER_APP
+	ota_enabled = 0;
+#endif
+
   uint8_t byte;
 
   for (uint16_t i = 0; i < bytes; i++)
@@ -289,20 +295,6 @@ void appUartSendCommand(uint8_t *buf, uint8_t size)
 
 /*****************************************************************************
 *****************************************************************************/
-#ifdef PER_APP
-// Create some variables to hold results of PER testing.
-// The number of frames transmitted is always 250 for histogram purposes.
-uint8_t rssi_buf[28];
-uint8_t lqi_buf[255];
-// For 1,000 frames we just keep some statistic variables.
-// The variables are initialiezed inverse to what values they might have to seed the sorting.
-uint8_t max_lqi = 0;
-uint8_t min_lqi = 255;
-uint8_t max_rssi = 0;
-uint8_t min_rssi = 28;
-uint16_t missed_frames = 0;
-#endif // PER_APP
-
 static bool appDataInd(NWK_DataInd_t *ind)
 {
   AppCommandDataInd_t cmd;
@@ -334,11 +326,14 @@ static bool appDataInd(NWK_DataInd_t *ind)
 #endif // LED_APP
 
 #ifdef PER_APP
-  // This records the "histogram" of received LQI & RSSI for up to 250 frames.
+  // This records the "histograms" of received LQI & RSSI for up to 250 frames.
+  // The histograms/arrays are passed to the PC node and post analyzed.
   lqi_buf[cmd.lqi]++;
-  rssi_buf[cmd.rssi]++;
-  // Add logic here for assigning min/max lqi/rssi and for calculating missed frames.
-  // The first two bytes of frame payload should have the monotonically increasing frame count!
+  // The number was converted to a -dB value when received, it is converted
+  // here to enable our array mechanism. That is why the * -1 and then adding
+  // one. In post analysis on the PC, it will need to be turned into a negative
+  // number.
+  rssi_buf[(cmd.rssi*(-1))+1]++;
 
 #endif // PER_APP
 
@@ -395,6 +390,16 @@ static void appInit(void)
 
   appState = APP_STATE_WAIT_COMMAND;
   appSetDefaults = false;
+
+
+#ifdef PER_APP
+  ota_enabled = 1;
+  memset(rssi_buf, 0, 256);
+  memset(lqi_buf, 0, 256);
+#else
+  ota_enabled = 0;
+#endif
+
 }
 
 /*****************************************************************************
