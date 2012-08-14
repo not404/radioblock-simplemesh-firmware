@@ -104,6 +104,12 @@ typedef enum AppCommandId_t
   APP_COMMAND_GET_ACK_STATE_RESP    = 0x37,
 
   APP_COMMAND_SET_LED_STATE_REQ     = 0x80,
+
+#ifdef PER_APP
+  APP_COMMAND_START_TEST_REQ		= 0x90,
+  APP_COMMAND_TEST_COMPLETE			= 0x91,
+  APP_COMMAND_SEND_DATA_REQ			= 0x92,
+#endif // PER_APP
 } AppCommandId_t;
 
 enum
@@ -333,6 +339,23 @@ typedef struct PACK
   uint8_t      id;
   uint8_t      ledState;
 } AppCommandSetLedStateReq_t;
+
+#ifdef PER_APP
+	typedef struct PACK
+	{
+	  uint8_t      id;
+	} AppCommandStartTest_t;
+
+	typedef struct PACK
+	{
+	  uint8_t      id;
+	} AppCommandTestComplete_t;
+
+	typedef struct PACK
+	{
+	  uint8_t      id;
+	} AppCommandSendTestData_t;
+#endif
 
 /*****************************************************************************
 *****************************************************************************/

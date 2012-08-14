@@ -308,13 +308,6 @@ static bool appDataInd(NWK_DataInd_t *ind)
   if (size > HAL_UartGetFreeSize())
     return false; 
 
-  cmd.id = APP_COMMAND_DATA_IND;
-  cmd.src = ind->src;
-  cmd.options = (ind->options.ack << 0) | (ind->options.security << 1);
-  cmd.lqi = ind->lqi;
-  cmd.rssi = ind->rssi;
-  memcpy(cmd.payload, ind->data, ind->size);
-
 #ifdef LED_APP
   // ETG
   // Interrogate the payload. If byte [0] = 'O', turn the LED off,
@@ -335,9 +328,64 @@ static bool appDataInd(NWK_DataInd_t *ind)
   // number.
   rssi_buf[(cmd.rssi*(-1))+1]++;
 
-#endif // PER_APP
+  /*
+	Now we must extract the payload portion of the received OTA data frame
+  	which contains an encapsulated "command". The supported commands and
+  	payload formats are:
+  	1. Set Channel Request
+		cmd.payload[0] = Command ID (0x29)
+  		cmd.payload[1] = Address LSB
+  		cmd.payload[2] = Address MSB
+  	2. Set Receiver State Request
+  		cmd.payload[0] = Command ID (0x2C)
+  		cmd.payload[1] = Receiver State (0 = off, 1 = on)
+  	New OTA commands:
+  	3. Start Test
+  		cmd.payload[0] = Command ID (0x90)
+  	4. Test Complete
+  		cmd.payload[0] = Command ID (0x91)
+  	5. Send Data
+  		cmd.payload[0] = Command ID (0x92)
+  	6. Test Indication
+
+  	Therefore, the normal data indication is 'hijacked' below...
+  	We actually need to make it appear as if the command came in over the
+  	UART so we hijack pieces of the "appUartStateMachine" function as
+  	well.
+
+  	The command will be processed in the "appTaskHandler" function...
+   */
+
+  appUartState = APP_UART_STATE_OK;
+  appState = APP_STATE_COMMAND_RECEIVED;
+  SYS_PortSet(APP_PORT);
+
+  if(ind->data[0] == APP_COMMAND_SET_CHANNEL_REQ)
+	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetChannelReq_t));
+  else if(ind->data[0] == APP_COMMAND_SET_RX_STATE_REQ)
+	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetRxStateReq_t));
+  else if(ind->data[0] == APP_COMMAND_START_TEST_REQ)
+	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandStartTest_t));
+  else if(ind->data[0] == APP_COMMAND_TEST_COMPLETE)
+	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandTestComplete_t));
+  else if(ind->data[0] == APP_COMMAND_SEND_DATA_REQ)
+	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSendTestData_t));
+
+  return false;
+
+
+//  SYS_TimerStop(&appUartTimer);
+//  SYS_TimerStart(&appUartTimer);
+#else
+  cmd.id = APP_COMMAND_DATA_IND;
+  cmd.src = ind->src;
+  cmd.options = (ind->options.ack << 0) | (ind->options.security << 1);
+  cmd.lqi = ind->lqi;
+  cmd.rssi = ind->rssi;
+  memcpy(cmd.payload, ind->data, ind->size);
 
   appUartSendCommand((uint8_t *)&cmd, sizeof(AppCommandDataIndHeader_t) + ind->size);
+#endif // PER_APP
 
   return true;
 }

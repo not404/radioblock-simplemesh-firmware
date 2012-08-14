@@ -68,6 +68,12 @@ AppStatus_t appCommandSetAckStateReqHandler(uint8_t *buf, uint8_t size);
 AppStatus_t appCommandGetAckStateReqHandler(uint8_t *buf, uint8_t size);
 AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size);
 
+#ifdef PER_APP
+	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size);
+	AppStatus_t appCommandTestCompleteHandler(uint8_t *buf, uint8_t size);
+	AppStatus_t appCommandSendTestDataReqHandler(uint8_t *buf, uint8_t size);
+#endif
+
 static void appDataConf(NWK_DataReq_t *req);
 
 /*****************************************************************************
@@ -114,6 +120,11 @@ static AppCommandRecord_t records[] =
   { APP_COMMAND_SET_ACK_STATE_REQ,    sizeof(AppCommandSetAckStateReq_t),     appCommandSetAckStateReqHandler },
   { APP_COMMAND_GET_ACK_STATE_REQ,    sizeof(AppCommandGetAckStateReq_t),     appCommandGetAckStateReqHandler },
   { APP_COMMAND_SET_LED_STATE_REQ,    sizeof(AppCommandSetLedStateReq_t),     appCommandSetLedStateReqHandler },
+#ifdef PER_APP
+  { APP_COMMAND_START_TEST_REQ,    	  sizeof(AppCommandStartTest_t),     	  appCommandStartTestReqHandler },
+  { APP_COMMAND_TEST_COMPLETE,        sizeof(AppCommandTestComplete_t),       appCommandTestCompleteHandler },
+  { APP_COMMAND_SEND_DATA_REQ,        sizeof(AppCommandSendTestData_t),       appCommandSendTestDataReqHandler },
+#endif
 };
 
 static uint32_t vBaudrates[32] =
@@ -530,6 +541,40 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
   (void)size;
   return APP_STATUS_SUCESS;
 }
+
+/*****************************************************************************
+*****************************************************************************/
+#ifdef PER_APP
+	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size)
+	{
+		AppCommandStartTest_t *req = (AppCommandStartTest_t *)buf;
+
+		// @todo	Add logic to start the PER test here.
+
+		(void)size;
+		return APP_STATUS_SUCESS;
+	}
+
+	AppStatus_t appCommandTestCompleteHandler(uint8_t *buf, uint8_t size)
+	{
+		AppCommandTestComplete_t *req = (AppCommandTestComplete_t *)buf;
+
+		// @todo	Add logic to send the PER test complete message OTA here.
+
+		(void)size;
+		return APP_STATUS_SUCESS;
+	}
+
+	AppStatus_t appCommandSendTestDataReqHandler(uint8_t *buf, uint8_t size)
+	{
+		AppCommandSendTestData_t *req = (AppCommandSendTestData_t *)buf;
+
+		// @todo	Add logic to send the PER test data OTA here.
+
+		(void)size;
+		return APP_STATUS_SUCESS;
+	}
+#endif
 
 /*****************************************************************************
 *****************************************************************************/
