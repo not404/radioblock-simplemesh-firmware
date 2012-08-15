@@ -329,7 +329,7 @@ static bool appDataInd(NWK_DataInd_t *ind)
   rssi_buf[(cmd.rssi*(-1))+1]++;
 
   /*
-	Now we must extract the payload portion of the received OTA data frame
+		Now we must extract the payload portion of the received OTA data frame
   	which contains an encapsulated "command". The supported commands and
   	payload formats are:
   	1. Set Channel Request
