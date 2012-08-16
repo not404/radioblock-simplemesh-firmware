@@ -361,9 +361,15 @@ static bool appDataInd(NWK_DataInd_t *ind)
   SYS_PortSet(APP_PORT);
 
   if(ind->data[0] == APP_COMMAND_SET_CHANNEL_REQ)
+  {
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetChannelReq_t));
+  	  appUartCmdSize = 2;
+  }
   else if(ind->data[0] == APP_COMMAND_SET_RX_STATE_REQ)
+  {
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetRxStateReq_t));
+  	  appUartCmdSize = 2;
+  }
   else if(ind->data[0] == APP_COMMAND_START_TEST_REQ)
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandStartTest_t));
   else if(ind->data[0] == APP_COMMAND_TEST_COMPLETE)

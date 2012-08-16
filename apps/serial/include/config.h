@@ -36,7 +36,7 @@
 *****************************************************************************/
 #define APP_PORT                       1
 
-#define APP_DEFAULT_ADDR               2
+#define APP_DEFAULT_ADDR               0x0002
 #define APP_DEFAULT_PANID              0
 #define APP_DEFAULT_CHANNEL            0x0f
 #define APP_DEFAULT_RX_STATE           true
