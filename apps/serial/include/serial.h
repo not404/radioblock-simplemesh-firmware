@@ -36,10 +36,9 @@
 
 /*****************************************************************************
 *****************************************************************************/
-#ifdef PER_APP
 // A global variable to tell whether the app is using the UART or OTA.
 uint8_t ota_enabled;
-
+#ifdef PER_APP
 // Create some variables to hold results of PER testing.
 // The number of frames transmitted is always 250 for histogram purposes.
 uint8_t rssi_buf[256]; // These are negative numbers. Convert in pc app
