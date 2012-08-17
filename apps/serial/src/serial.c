@@ -371,11 +371,22 @@ static bool appDataInd(NWK_DataInd_t *ind)
   	  appUartCmdSize = 2;
   }
   else if(ind->data[0] == APP_COMMAND_START_TEST_REQ)
+  {
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandStartTest_t));
+  	  appUartCmdSize = 1;
+  }
+
   else if(ind->data[0] == APP_COMMAND_TEST_COMPLETE)
+  {
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandTestComplete_t));
+	  appUartCmdSize = 1;
+  }
+
   else if(ind->data[0] == APP_COMMAND_SEND_DATA_REQ)
+  {
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSendTestData_t));
+	  appUartCmdSize = 1;
+  }
 
   return false;
 
