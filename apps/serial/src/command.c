@@ -544,6 +544,30 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
 
 /*****************************************************************************
 *****************************************************************************/
+
+/*
+ * PER IMPLEMENTATION NOTES!
+ *
+ * The TXN will transmit 20 byte pseudo-random frames at 10 mS
+ * intervals. It will transmit 250 frames. After frame transmission
+ * is complete it will return to RX mode.
+ *
+ * The RXN will set a timer for 5 seconds which is 2x the time
+ * required for it to receive the 250 frames.
+ *
+ * When the timer expires it will send the "test complete" frame
+ * to the PCN.
+ *
+ * This will prompt the PCN to send a "send data" frame to the RXN
+ * and the RXN will send three 64 byte payload frames and then a 58
+ * byte payload frame (250 bytes of test data) - This will be LQI
+ * data. The 4 frames will be repeated to send the RSSI data.
+ *
+ * The PCN will then post process the LQI and RSSI data to determine
+ * PER results.
+ */
+
+
 #ifdef PER_APP
 	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size)
 	{
