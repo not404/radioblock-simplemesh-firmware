@@ -28,7 +28,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 #include <stdio.h>
 #include <string.h>
 #include "config.h"
@@ -48,10 +48,13 @@
 #define APP_UART_TIMER_INTERVAL    100
 #define APP_UART_TX_BUFFER_SIZE    350
 #define APP_UART_RX_BUFFER_SIZE    150
-#define APP_UART_CMD_BUFFER_SIZE   150
+#ifndef PER_APP
+	#define APP_UART_CMD_BUFFER_SIZE   150
+#endif
 
 /*****************************************************************************
 *****************************************************************************/
+#ifndef PER_APP
 typedef enum AppState_t
 {
   APP_STATE_INITIAL,
@@ -70,6 +73,7 @@ typedef enum AppState_t
   APP_STATE_UART_REQ,
 } AppState_t;
 
+
 typedef enum AppUartState_t
 {
   APP_UART_STATE_IDLE,
@@ -81,6 +85,7 @@ typedef enum AppUartState_t
   APP_UART_STATE_ERROR,
   APP_UART_STATE_STOP,
 } AppUartState_t;
+#endif
 
 typedef struct PACK AppMessage_t
 {
@@ -98,15 +103,28 @@ uint32_t appSleepReqInterval;
 bool appSetDefaults = false;
 bool appUpdateUart = false;
 
-static AppState_t appState = APP_STATE_INITIAL;
+#ifdef PER_APP
+	AppState_t appState = APP_STATE_INITIAL;
+#else
+	static AppState_t appState = APP_STATE_INITIAL;
+#endif
 
 static HAL_Uart_t appUart;
 static uint8_t appUartTxBuffer[APP_UART_TX_BUFFER_SIZE];
 static uint8_t appUartRxBuffer[APP_UART_RX_BUFFER_SIZE];
-static AppUartState_t appUartState = APP_UART_STATE_IDLE;
+
+#ifdef PER_APP
+	AppUartState_t appUartState = APP_UART_STATE_IDLE;
+	uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
+	uint8_t appUartCmdSize;
+#else
+	static AppUartState_t appUartState = APP_UART_STATE_IDLE;
+	static uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
+	static uint8_t appUartCmdSize;
+#endif
 static SYS_Timer_t appUartTimer;
-static uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
-static uint8_t appUartCmdSize;
+
+
 static uint8_t appUartCmdPtr;
 static uint16_t appUartCmdCrc;
 static AppStatus_t appUartStatus;
@@ -306,7 +324,7 @@ static bool appDataInd(NWK_DataInd_t *ind)
   size = 1/*start*/ + 1/*size*/ + sizeof(AppCommandDataIndHeader_t) + ind->size + 2/*crc*/;
 
   if (size > HAL_UartGetFreeSize())
-    return false; 
+    return false;
 
 #ifdef LED_APP
   // ETG

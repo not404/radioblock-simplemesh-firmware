@@ -46,6 +46,42 @@ uint8_t lqi_buf[256];
 
 // PER frame counter.
 uint8_t per_count;
+
+typedef enum AppState_t
+{
+  APP_STATE_INITIAL,
+  APP_STATE_WAIT_COMMAND,
+  APP_STATE_COMMAND_RECEIVED,
+  APP_STATE_PREPARE_TO_SLEEP,
+  APP_STATE_WAIT_SLEEP_CONF,
+  APP_STATE_SLEEP,
+  APP_STATE_WAKEUP,
+  APP_STATE_WAIT_WAKEUP_CONF,
+  APP_STATE_READY,
+
+  APP_STATE_RESET_REQ,
+  APP_STATE_SLEEP_REQ,
+  APP_STATE_DEFAULTS_REQ,
+  APP_STATE_UART_REQ,
+} AppState_t;
+
+typedef enum AppUartState_t
+{
+  APP_UART_STATE_IDLE,
+  APP_UART_STATE_READ_SIZE,
+  APP_UART_STATE_READ_DATA,
+  APP_UART_STATE_READ_CRC_1,
+  APP_UART_STATE_READ_CRC_2,
+  APP_UART_STATE_OK,
+  APP_UART_STATE_ERROR,
+  APP_UART_STATE_STOP,
+} AppUartState_t;
+
+AppUartState_t appUartState;
+AppState_t appState;
+
+
+#define APP_UART_CMD_BUFFER_SIZE   150
 #endif
 
 /*****************************************************************************
@@ -180,7 +216,7 @@ typedef struct PACK
   uint8_t      bits;
   uint8_t      parity;
   uint8_t      stop;
-  uint8_t      baudrate; 
+  uint8_t      baudrate;
 } AppCommandSetUartModeReq_t;
 
 typedef struct PACK

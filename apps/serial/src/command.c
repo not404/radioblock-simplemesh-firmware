@@ -582,7 +582,23 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
  */
 
 #ifdef PER_APP
-	extern AppIb_t appIb; // Declared in ib.c
+//extern AppUartState_t appUartState;
+
+typedef struct PACK
+{
+//  uint8_t	   startByte;
+//  uint8_t      size;
+  uint8_t      id;
+  uint16_t     dst;
+  uint8_t      options;
+  uint8_t      handle;
+  uint8_t	   payload[8];
+} PerAppCommandDataReq_t;
+
+extern AppIb_t appIb; // Declared in ib.c
+
+extern uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
+extern uint8_t appUartCmdSize;
 
 	// We send 250 frames at 10mS intervals so we should hit
 	// the call to perSendFrame 250 times. Count the number
@@ -591,12 +607,38 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
 	// in the appInit function in serial.c.
 	void perSendFrame(SYS_Timer_t *timer)
 	{
-		// if(per_count < 250)
-		if(per_count < 10) // Test mode
+#ifdef TEST_MODE
+		if(per_count < 10)
+#else
+		if(per_count < 250)
+#endif
 		{
 			per_count++;
 
-			// Create and send a PER frame.
+			// Create and send a PER frame to the RXN (0x0002). It has to
+			// Look like it came in over the UART:
+			PerAppCommandDataReq_t dr;
+			//dr.startByte = 0xab;
+			//dr.size = 14;
+			dr.id = APP_COMMAND_DATA_REQ;
+#ifdef TEST_MODE
+			dr.dst = 0;
+#else
+			dr.dst = 0x0002;
+#endif
+			dr.options = 0;
+			dr.handle = 42;
+			// Create some pseudo-random payload data.
+			for(uint8_t i=0; i<8; i++)
+				dr.payload[i] = per_count;
+
+			// Fake out the UART task handler so that this frame gets sent.
+			appUartState = APP_UART_STATE_OK;
+			appState = APP_STATE_COMMAND_RECEIVED;
+			SYS_PortSet(APP_PORT);
+
+			memcpy(appUartCmdBuffer, (uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
+			appUartCmdSize = 14;
 
 			// Restart the timer for another 10mS interval
 		    SYS_TimerStop(&txn_timer);
@@ -631,7 +673,7 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
 		if(0x0001 == appIb.addr)
 		{
 			// Initialize the 10mS interval timer
-			txn_timer.interval = 10;
+			txn_timer.interval = 100;
 			txn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			txn_timer.handler = perSendFrame;
 
