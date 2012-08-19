@@ -43,6 +43,9 @@ uint8_t ota_enabled;
 // The number of frames transmitted is always 250 for histogram purposes.
 uint8_t rssi_buf[256]; // These are negative numbers. Convert in pc app
 uint8_t lqi_buf[256];
+
+// PER frame counter.
+uint8_t per_count;
 #endif
 
 /*****************************************************************************

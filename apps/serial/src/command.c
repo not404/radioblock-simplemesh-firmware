@@ -38,7 +38,20 @@
 #include "halUart.h"
 #include "serial.h"
 #include "led.h"
+#ifdef PER_APP
+	#include "sysTimer.h"
+	#include "phy.h"
+#endif
 
+/*****************************************************************************
+*****************************************************************************/
+#ifdef PER_APP
+	// Create a 10mS callback timer.
+	SYS_Timer_t txn_timer;
+
+	// Create a 5S callback timer.
+	SYS_Timer_t rxn_timer;
+#endif
 /*****************************************************************************
 *****************************************************************************/
 #define AT_LEAST     0x80
@@ -124,6 +137,7 @@ static AppCommandRecord_t records[] =
   { APP_COMMAND_START_TEST_REQ,    	  sizeof(AppCommandStartTest_t),          appCommandStartTestReqHandler },
   { APP_COMMAND_TEST_COMPLETE,        sizeof(AppCommandTestComplete_t),       appCommandTestCompleteHandler },
   { APP_COMMAND_SEND_DATA_REQ,        sizeof(AppCommandSendTestData_t),       appCommandSendTestDataReqHandler },
+
 #endif
 };
 
@@ -295,7 +309,7 @@ AppStatus_t appCommandSetUartModeReqHandler(uint8_t *buf, uint8_t size)
     baudrate = vBaudrates[req->baudrate];
   else
     return APP_STATUS_MALFORMED_COMMAND;
-  
+
   appUpdateUart = true;
   appIb.bits = bits;
   appIb.parity = parity;
@@ -567,13 +581,82 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
  * PER results.
  */
 
-
 #ifdef PER_APP
+	extern AppIb_t appIb; // Declared in ib.c
+
+	// We send 250 frames at 10mS intervals so we should hit
+	// the call to perSendFrame 250 times. Count the number
+	// of calls and stop it when 250 is reached.
+	// uint8_t per_count = 0; is declared in serial.h and initialized
+	// in the appInit function in serial.c.
+	void perSendFrame(SYS_Timer_t *timer)
+	{
+		// if(per_count < 250)
+		if(per_count < 10) // Test mode
+		{
+			per_count++;
+
+			// Create and send a PER frame.
+
+			// Restart the timer for another 10mS interval
+		    SYS_TimerStop(&txn_timer);
+		    SYS_TimerStart(&txn_timer);
+		}
+		else
+		{
+			per_count = 0;
+			phyTrxSetState(TRX_CMD_RX_ON);
+			SYS_TimerStop(timer);
+		}
+	}
+
+	void perReceiveFrame(SYS_Timer_t *timer)
+	{
+		//Stop the timer (should only occur once anyway)...
+		SYS_TimerStop(&rxn_timer);
+
+		// Send PER test complete frame to PCN.
+
+	}
+
 	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size)
 	{
-		AppCommandStartTest_t *req = (AppCommandStartTest_t *)buf;
+		// Don't need or care about the parameters - They are used for
+		// command dispatcher consistency.
+		// AppCommandStartTest_t *req = (AppCommandStartTest_t *)buf;
 
 		// @todo	Add logic to start the PER test here.
+		// TXN address is: 0x0001
+		// RXN address is: 0x0002
+		if(0x0001 == appIb.addr)
+		{
+			// Initialize the 10mS interval timer
+			txn_timer.interval = 10;
+			txn_timer.mode = SYS_TIMER_PERIODIC_MODE;
+			txn_timer.handler = perSendFrame;
+
+			// Ensure the radio state is set to TX mode.
+			phyTrxSetState(TRX_CMD_PLL_ON);
+
+			// Send the frame
+			perSendFrame(&txn_timer);
+
+		}
+		else if(0x0002 == appIb.addr)
+		{
+			// Create a 5 Second timer and callback function. When it expires
+			// it should send the "test complete" frame to the PCN (0x0000).
+
+			// Initialize the 5S timer.
+			rxn_timer.interval = 50000;
+			rxn_timer.mode = SYS_TIMER_PERIODIC_MODE;
+			rxn_timer.handler = perReceiveFrame;
+			SYS_TimerRestart(&rxn_timer);
+
+			// Ensure the radio is set to RX mode.
+			phyTrxSetState(TRX_CMD_RX_ON);
+
+		}
 
 		(void)size;
 		return APP_STATUS_SUCESS;
@@ -581,9 +664,12 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
 
 	AppStatus_t appCommandTestCompleteHandler(uint8_t *buf, uint8_t size)
 	{
-		AppCommandTestComplete_t *req = (AppCommandTestComplete_t *)buf;
+		// Don't need or care about the parameters - They are used for
+		// command dispatcher consistency.
+		//AppCommandTestComplete_t *req = (AppCommandTestComplete_t *)buf;
 
-		// @todo	Add logic to send the PER test complete message OTA here.
+		// @todo	Add logic to receive the PER test complete message OTA here.
+		// The PCN is the receipient node.
 
 		(void)size;
 		return APP_STATUS_SUCESS;
@@ -591,9 +677,12 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
 
 	AppStatus_t appCommandSendTestDataReqHandler(uint8_t *buf, uint8_t size)
 	{
-		AppCommandSendTestData_t *req = (AppCommandSendTestData_t *)buf;
+		// Don't need or care about the parameters - They are used for
+		// command dispatcher consistency.
+		//AppCommandSendTestData_t *req = (AppCommandSendTestData_t *)buf;
 
 		// @todo	Add logic to send the PER test data OTA here.
+		// The RXN is the recipient node here.
 
 		(void)size;
 		return APP_STATUS_SUCESS;

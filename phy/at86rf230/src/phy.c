@@ -70,7 +70,9 @@ typedef struct PhyIb_t
 *****************************************************************************/
 static void phyWriteRegister(uint8_t reg, uint8_t value);
 static uint8_t phyReadRegister(uint8_t reg);
-static void phyTrxSetState(uint8_t state);
+#ifndef PER_APP
+	static void phyTrxSetState(uint8_t state);
+#endif
 
 /*****************************************************************************
 *****************************************************************************/
@@ -232,13 +234,13 @@ static void phyProcessRequests(void)
 
   if (phyIb.requests & PHY_IB_CHANNEL)
   {
-    uint8_t reg = phyReadRegister(PHY_CC_CCA_REG) & CCA_REG_CHANNEL_MASK; 
+    uint8_t reg = phyReadRegister(PHY_CC_CCA_REG) & CCA_REG_CHANNEL_MASK;
     phyWriteRegister(PHY_CC_CCA_REG, reg | phyIb.channel);
   }
 
   if (phyIb.requests & PHY_IB_TX_POWER)
   {
-    uint8_t reg = phyReadRegister(PHY_TX_PWR_REG) & TX_PWR_REG_TX_PWR_MASK; 
+    uint8_t reg = phyReadRegister(PHY_TX_PWR_REG) & TX_PWR_REG_TX_PWR_MASK;
     phyWriteRegister(PHY_TX_PWR_REG, reg | phyIb.txPower);
   }
 
@@ -277,7 +279,11 @@ static uint8_t phyReadRegister(uint8_t reg)
 
 /*****************************************************************************
 *****************************************************************************/
-static void phyTrxSetState(uint8_t state)
+#ifdef PER_APP
+	void phyTrxSetState(uint8_t state)
+#else
+	static void phyTrxSetState(uint8_t state)
+#endif
 {
   phyWriteRegister(TRX_STATE_REG, TRX_CMD_FORCE_TRX_OFF);
   phyWriteRegister(TRX_STATE_REG, state);

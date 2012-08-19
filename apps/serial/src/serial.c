@@ -319,14 +319,18 @@ static bool appDataInd(NWK_DataInd_t *ind)
 #endif // LED_APP
 
 #ifdef PER_APP
-  // This records the "histograms" of received LQI & RSSI for up to 250 frames.
-  // The histograms/arrays are passed to the PC node and post analyzed.
-  lqi_buf[cmd.lqi]++;
-  // The number was converted to a -dB value when received, it is converted
-  // here to enable our array mechanism. That is why the * -1 and then adding
-  // one. In post analysis on the PC, it will need to be turned into a negative
-  // number.
-  rssi_buf[(cmd.rssi*(-1))+1]++;
+  // Only the RXN collects data.
+  if(0x0002 == appIb.addr);
+  {
+	  // This records the "histograms" of received LQI & RSSI for up to 250 frames.
+	  // The histograms/arrays are passed to the PC node and post analyzed.
+	  lqi_buf[cmd.lqi]++;
+	  // The number was converted to a -dB value when received, it is converted
+	  // here to enable our array mechanism. That is why the * -1 and then adding
+	  // one. In post analysis on the PC, it will need to be turned into a negative
+	  // number.
+	  rssi_buf[(cmd.rssi*(-1))+1]++;
+  }
 
   /*
 		Now we must extract the payload portion of the received OTA data frame
@@ -461,6 +465,7 @@ static void appInit(void)
   ota_enabled = 1;
   memset(rssi_buf, 0, 256);
   memset(lqi_buf, 0, 256);
+  per_count = 0;
 #else
   ota_enabled = 0;
 #endif

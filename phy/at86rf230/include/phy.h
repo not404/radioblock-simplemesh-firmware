@@ -185,6 +185,9 @@ extern volatile int8_t      phyRxRssi;
 
 /*****************************************************************************
 *****************************************************************************/
+#ifdef PER_APP
+	void phyTrxSetState(uint8_t state);
+#endif
 void PHY_Init(void);
 void PHY_SetRxState(bool rx);
 void PHY_SetTxPower(uint8_t txPower);

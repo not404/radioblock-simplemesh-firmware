@@ -34,9 +34,13 @@
 
 /*****************************************************************************
 *****************************************************************************/
+#ifdef PER_APP
+//	#include "serial.h"
+//	extern AppIb_t appIb;
+#endif
 #define APP_PORT                       1
 
-#define APP_DEFAULT_ADDR               0x0002
+#define APP_DEFAULT_ADDR               0x0001
 #define APP_DEFAULT_PANID              0
 #define APP_DEFAULT_CHANNEL            0x0f
 #define APP_DEFAULT_RX_STATE           true
