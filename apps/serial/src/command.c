@@ -658,6 +658,27 @@ extern uint8_t appUartCmdSize;
 		SYS_TimerStop(&rxn_timer);
 
 		// Send PER test complete frame to PCN.
+		// Create and send a PER frame to the PCN (0x0000). It has to
+		// Look like it came in over the UART:
+		PerAppCommandDataReq_t dr;
+		dr.id = APP_COMMAND_DATA_REQ;
+#ifdef TEST_MODE
+		dr.dst = 0x0002;
+#else
+		dr.dst = 0x0000;
+#endif
+		dr.options = 0;
+		dr.handle = 42;
+		// Insert the OTA "Test Complete" ID.
+		dr.payload[0] = APP_COMMAND_TEST_COMPLETE;
+
+		// Fake out the UART task handler so that this frame gets sent.
+		appUartState = APP_UART_STATE_OK;
+		appState = APP_STATE_COMMAND_RECEIVED;
+		SYS_PortSet(APP_PORT);
+
+		memcpy(appUartCmdBuffer, (uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
+		appUartCmdSize = 7;
 
 	}
 
@@ -673,7 +694,7 @@ extern uint8_t appUartCmdSize;
 		if(0x0001 == appIb.addr)
 		{
 			// Initialize the 10mS interval timer
-			txn_timer.interval = 100;
+			txn_timer.interval = 1000;
 			txn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			txn_timer.handler = perSendFrame;
 
