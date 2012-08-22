@@ -387,6 +387,7 @@ typedef struct PACK
 	typedef struct PACK
 	{
 	  uint8_t      id;
+	  uint8_t	   total;
 	} AppCommandTestComplete_t;
 
 	typedef struct PACK

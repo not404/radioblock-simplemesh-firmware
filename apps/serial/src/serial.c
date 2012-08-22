@@ -349,12 +349,10 @@ static bool appDataInd(NWK_DataInd_t *ind)
   {
 	  // This records the "histograms" of received LQI & RSSI for up to 250 frames.
 	  // The histograms/arrays are passed to the PC node and post analyzed.
-	  lqi_buf[cmd.lqi]++;
-	  // The number was converted to a -dB value when received, it is converted
-	  // here to enable our array mechanism. That is why the * -1 and then adding
-	  // one. In post analysis on the PC, it will need to be turned into a negative
-	  // number.
-	  rssi_buf[(cmd.rssi*(-1))+1]++;
+	  lqi_buf[ind->lqi]++;
+	  // The number was converted to a -dB value when received. We convert to uint8_t
+	  // using a cast to be safe, as avoids ever giving us an out-of-range value
+	  rssi_buf[((uint8_t)ind->rssi)]++;
   }
 
   /*
@@ -385,34 +383,42 @@ static bool appDataInd(NWK_DataInd_t *ind)
   	The command will be processed in the "appTaskHandler" function...
    */
 
-  appUartState = APP_UART_STATE_OK;
-  appState = APP_STATE_COMMAND_RECEIVED;
   SYS_PortSet(APP_PORT);
 
   if(ind->data[0] == APP_COMMAND_SET_CHANNEL_REQ)
   {
+	  appUartState = APP_UART_STATE_OK;
+	  appState = APP_STATE_COMMAND_RECEIVED;
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetChannelReq_t));
   	  appUartCmdSize = 2;
   }
   else if(ind->data[0] == APP_COMMAND_SET_RX_STATE_REQ)
   {
+	  appUartState = APP_UART_STATE_OK;
+	  appState = APP_STATE_COMMAND_RECEIVED;
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetRxStateReq_t));
   	  appUartCmdSize = 2;
   }
   else if(ind->data[0] == APP_COMMAND_START_TEST_REQ)
   {
+	  appUartState = APP_UART_STATE_OK;
+	  appState = APP_STATE_COMMAND_RECEIVED;
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandStartTest_t));
   	  appUartCmdSize = 1;
   }
 
   else if(ind->data[0] == APP_COMMAND_TEST_COMPLETE)
   {
+	  appUartState = APP_UART_STATE_OK;
+	  appState = APP_STATE_COMMAND_RECEIVED;
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandTestComplete_t));
 	  appUartCmdSize = 1;
   }
 
   else if(ind->data[0] == APP_COMMAND_SEND_DATA_REQ)
   {
+	  appUartState = APP_UART_STATE_OK;
+	  appState = APP_STATE_COMMAND_RECEIVED;
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSendTestData_t));
 	  appUartCmdSize = 1;
   }
@@ -432,6 +438,7 @@ static bool appDataInd(NWK_DataInd_t *ind)
 
 	return true;
 	}
+
   SYS_TimerStop(&appUartTimer);
   SYS_TimerStart(&appUartTimer);
   return false;

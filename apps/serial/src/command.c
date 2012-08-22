@@ -46,10 +46,10 @@
 /*****************************************************************************
 *****************************************************************************/
 #ifdef PER_APP
-	// Create a 10mS callback timer.
+	// Create a 100mS callback timer.
 	SYS_Timer_t txn_timer;
 
-	// Create a 5S callback timer.
+	// Create a 35S callback timer.
 	SYS_Timer_t rxn_timer;
 #endif
 /*****************************************************************************
@@ -600,15 +600,18 @@ extern AppIb_t appIb; // Declared in ib.c
 extern uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
 extern uint8_t appUartCmdSize;
 
-	// We send 250 frames at 10mS intervals so we should hit
+	// We send 250 frames at 100mS intervals so we should hit
 	// the call to perSendFrame 250 times. Count the number
 	// of calls and stop it when 250 is reached.
 	// uint8_t per_count = 0; is declared in serial.h and initialized
 	// in the appInit function in serial.c.
 	void perSendFrame(SYS_Timer_t *timer)
 	{
-		if(per_count < 10)
-//		if(per_count < 250)
+
+
+
+//		if(per_count < 10)
+		if(per_count < 250)
 		{
 			per_count++;
 
@@ -659,6 +662,13 @@ extern uint8_t appUartCmdSize;
 		//Stop the timer (should only occur once anyway)...
 		SYS_TimerStop(&rxn_timer);
 
+		// Total frames received for inclusion
+		uint8_t totalFrames = 0;
+
+		for(int i = 0; i < 256; i++) {
+			totalFrames += lqi_buf[i];
+		}
+
 		// Send PER test complete frame to PCN.
 		// Create and send a PER frame to the PCN (0x0000). It has to
 		// Look like it came in over the UART:
@@ -669,6 +679,7 @@ extern uint8_t appUartCmdSize;
 		dr.handle = 42;
 		// Insert the OTA "Test Complete" ID.
 		dr.payload[0] = APP_COMMAND_TEST_COMPLETE;
+		dr.payload[1] = totalFrames;
 
 		// Fake out the UART task handler so that this frame gets sent.
 		appUartState = APP_UART_STATE_OK;
@@ -691,13 +702,15 @@ extern uint8_t appUartCmdSize;
 		// Turn off UART while PER test is running.
 		ota_enabled = 0;
 
+		ledOn();
+
 		// @todo	Add logic to start the PER test here.
 		// TXN address is: 0x0001
 		// RXN address is: 0x0002
 		if(0x1111 == appIb.addr)
 		{
-			// Initialize the 10mS interval timer
-			txn_timer.interval = 1000;
+			// Initialize the 100mS interval timer
+			txn_timer.interval = 250;
 			txn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			txn_timer.handler = perSendFrame;
 
@@ -722,8 +735,8 @@ extern uint8_t appUartCmdSize;
 			// Create a 5 Second timer and callback function. When it expires
 			// it should send the "test complete" frame to the PCN (0x0000).
 
-			// Initialize the 5S timer.
-			rxn_timer.interval = 5000;
+			// Initialize the 35S timer.
+			rxn_timer.interval = 35000;
 			rxn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			rxn_timer.handler = perReceiveFrame;
 			SYS_TimerRestart(&rxn_timer);
