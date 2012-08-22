@@ -607,11 +607,8 @@ extern uint8_t appUartCmdSize;
 	// in the appInit function in serial.c.
 	void perSendFrame(SYS_Timer_t *timer)
 	{
-#ifdef TEST_MODE
 		if(per_count < 10)
-#else
-		if(per_count < 250)
-#endif
+//		if(per_count < 250)
 		{
 			per_count++;
 
@@ -622,9 +619,9 @@ extern uint8_t appUartCmdSize;
 			//dr.size = 14;
 			dr.id = APP_COMMAND_DATA_REQ;
 #ifdef TEST_MODE
-			dr.dst = 0;
+			dr.dst = 0x0000;
 #else
-			dr.dst = 0x0002;
+			dr.dst = 0x2222;
 #endif
 			dr.options = 0;
 			dr.handle = 42;
@@ -646,7 +643,10 @@ extern uint8_t appUartCmdSize;
 		}
 		else
 		{
+			ledOff();
 			per_count = 0;
+			// Turn the UART back on.
+			ota_enabled = 1;
 			phyTrxSetState(TRX_CMD_RX_ON);
 			SYS_TimerStop(timer);
 		}
@@ -654,6 +654,8 @@ extern uint8_t appUartCmdSize;
 
 	void perReceiveFrame(SYS_Timer_t *timer)
 	{
+		ledOff();
+
 		//Stop the timer (should only occur once anyway)...
 		SYS_TimerStop(&rxn_timer);
 
@@ -662,11 +664,7 @@ extern uint8_t appUartCmdSize;
 		// Look like it came in over the UART:
 		PerAppCommandDataReq_t dr;
 		dr.id = APP_COMMAND_DATA_REQ;
-#ifdef TEST_MODE
-		dr.dst = 0x0002;
-#else
 		dr.dst = 0x0000;
-#endif
 		dr.options = 0;
 		dr.handle = 42;
 		// Insert the OTA "Test Complete" ID.
@@ -680,6 +678,8 @@ extern uint8_t appUartCmdSize;
 		memcpy(appUartCmdBuffer, (uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
 		appUartCmdSize = 7;
 
+		// Turn the UART back on.
+		ota_enabled = 1;
 	}
 
 	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size)
@@ -688,10 +688,13 @@ extern uint8_t appUartCmdSize;
 		// command dispatcher consistency.
 		// AppCommandStartTest_t *req = (AppCommandStartTest_t *)buf;
 
+		// Turn off UART while PER test is running.
+		ota_enabled = 0;
+
 		// @todo	Add logic to start the PER test here.
 		// TXN address is: 0x0001
 		// RXN address is: 0x0002
-		if(0x0001 == appIb.addr)
+		if(0x1111 == appIb.addr)
 		{
 			// Initialize the 10mS interval timer
 			txn_timer.interval = 1000;
@@ -705,13 +708,22 @@ extern uint8_t appUartCmdSize;
 			perSendFrame(&txn_timer);
 
 		}
-		else if(0x0002 == appIb.addr)
+#ifdef TEST_MODE
+		else if(0x0000 == appIb.addr)
+#else
+		else if(0x2222 == appIb.addr)
+#endif
 		{
+			ledOn();
+			// Init the two buffers/histograms.
+		    memset(rssi_buf, 0, 256);
+		    memset(lqi_buf, 0, 256);
+
 			// Create a 5 Second timer and callback function. When it expires
 			// it should send the "test complete" frame to the PCN (0x0000).
 
 			// Initialize the 5S timer.
-			rxn_timer.interval = 50000;
+			rxn_timer.interval = 5000;
 			rxn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			rxn_timer.handler = perReceiveFrame;
 			SYS_TimerRestart(&rxn_timer);

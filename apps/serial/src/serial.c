@@ -244,7 +244,7 @@ static void appUartRxCallback(uint16_t bytes)
 // If a character is received over the UART then turn off the PER_APP code.
 // "ota_enabled" is a flag for this.
 #ifdef PER_APP
-	ota_enabled = 0;
+//	ota_enabled = 0;
 #endif
 
   uint8_t byte;
@@ -298,17 +298,20 @@ static void appUartAck(AppStatus_t status)
 *****************************************************************************/
 void appUartSendCommand(uint8_t *buf, uint8_t size)
 {
-  uint16_t crc;
+//	if(ota_enabled) // Don't use the UART in the PER_APP
+	{
+	  uint16_t crc;
 
-  HAL_UartWriteByte(APP_UART_START_BYTE);
-  HAL_UartWriteByte(size);
+	  HAL_UartWriteByte(APP_UART_START_BYTE);
+	  HAL_UartWriteByte(size);
 
-  for (uint8_t i = 0; i < size; i++)
-    HAL_UartWriteByte(buf[i]);
+	  for (uint8_t i = 0; i < size; i++)
+	    HAL_UartWriteByte(buf[i]);
 
-  crc = appCrcCcitt(buf, size);
-  HAL_UartWriteByte(crc & 0xff);
-  HAL_UartWriteByte((crc >> 8) & 0xff);
+	  crc = appCrcCcitt(buf, size);
+	  HAL_UartWriteByte(crc & 0xff);
+	  HAL_UartWriteByte((crc >> 8) & 0xff);
+	}
 }
 
 /*****************************************************************************
@@ -338,7 +341,11 @@ static bool appDataInd(NWK_DataInd_t *ind)
 
 #ifdef PER_APP
   // Only the RXN collects data.
-  if(0x0002 == appIb.addr);
+#ifdef TEST_MODE
+  if(0x0000 == appIb.addr);
+#else
+  if(0x2222 == appIb.addr);
+#endif
   {
 	  // This records the "histograms" of received LQI & RSSI for up to 250 frames.
 	  // The histograms/arrays are passed to the PC node and post analyzed.
@@ -363,11 +370,11 @@ static bool appDataInd(NWK_DataInd_t *ind)
   		cmd.payload[1] = Receiver State (0 = off, 1 = on)
   	New OTA commands:
   	3. Start Test
-  		cmd.payload[0] = Command ID (0x90)
+  		cmd.payload[0] = Command ID (0xFD)
   	4. Test Complete
-  		cmd.payload[0] = Command ID (0x91)
+  		cmd.payload[0] = Command ID (0xFE)
   	5. Send Data
-  		cmd.payload[0] = Command ID (0x92)
+  		cmd.payload[0] = Command ID (0xFF)
   	6. Test Indication
 
   	Therefore, the normal data indication is 'hijacked' below...
@@ -409,12 +416,26 @@ static bool appDataInd(NWK_DataInd_t *ind)
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSendTestData_t));
 	  appUartCmdSize = 1;
   }
+  else // If this is not an OTA command then do the normal thing.
+  {
+  	cmd.id = APP_COMMAND_DATA_IND;
+	cmd.src = ind->src;
+	cmd.options = (ind->options.ack << 0) | (ind->options.security << 1);
+	cmd.lqi = ind->lqi;
+	cmd.rssi = ind->rssi;
+	memcpy(cmd.payload, ind->data, ind->size);
 
+	appUartSendCommand((uint8_t *)&cmd, sizeof(AppCommandDataIndHeader_t) + ind->size);
+
+	SYS_TimerStop(&appUartTimer);
+	SYS_TimerStart(&appUartTimer);
+
+	return true;
+	}
+  SYS_TimerStop(&appUartTimer);
+  SYS_TimerStart(&appUartTimer);
   return false;
 
-
-//  SYS_TimerStop(&appUartTimer);
-//  SYS_TimerStart(&appUartTimer);
 #else
   cmd.id = APP_COMMAND_DATA_IND;
   cmd.src = ind->src;
