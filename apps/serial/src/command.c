@@ -46,7 +46,7 @@
 /*****************************************************************************
 *****************************************************************************/
 #ifdef PER_APP
-	// Create a 100mS callback timer.
+	// Create a 50mS callback timer.
 	SYS_Timer_t txn_timer;
 
 	// Create a 35S callback timer.
@@ -600,7 +600,7 @@ extern AppIb_t appIb; // Declared in ib.c
 extern uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
 extern uint8_t appUartCmdSize;
 
-	// We send 250 frames at 100mS intervals so we should hit
+	// We send 250 frames at 50mS intervals so we should hit
 	// the call to perSendFrame 250 times. Count the number
 	// of calls and stop it when 250 is reached.
 	// uint8_t per_count = 0; is declared in serial.h and initialized
@@ -611,7 +611,7 @@ extern uint8_t appUartCmdSize;
 
 
 //		if(per_count < 10)
-		if(per_count < 250)
+		if(per_count < 251)
 		{
 			per_count++;
 
@@ -628,9 +628,9 @@ extern uint8_t appUartCmdSize;
 #endif
 			dr.options = 0;
 			dr.handle = 42;
-			// Create some pseudo-random payload data.
+			// Create some pseudo-random payload data. Don't let us collide with real commands.
 			for(uint8_t i=0; i<8; i++)
-				dr.payload[i] = per_count;
+				dr.payload[i] = per_count & 0x0F;
 
 			// Fake out the UART task handler so that this frame gets sent.
 			appUartState = APP_UART_STATE_OK;
@@ -709,8 +709,8 @@ extern uint8_t appUartCmdSize;
 		// RXN address is: 0x0002
 		if(0x1111 == appIb.addr)
 		{
-			// Initialize the 100mS interval timer
-			txn_timer.interval = 250;
+			// Initialize the 50mS interval timer
+			txn_timer.interval = 50;
 			txn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			txn_timer.handler = perSendFrame;
 
@@ -735,8 +735,8 @@ extern uint8_t appUartCmdSize;
 			// Create a 5 Second timer and callback function. When it expires
 			// it should send the "test complete" frame to the PCN (0x0000).
 
-			// Initialize the 35S timer.
-			rxn_timer.interval = 35000;
+			// Initialize the 20S timer.
+			rxn_timer.interval = 20000;
 			rxn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			rxn_timer.handler = perReceiveFrame;
 			SYS_TimerRestart(&rxn_timer);
