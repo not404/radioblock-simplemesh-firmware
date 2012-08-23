@@ -106,11 +106,18 @@ void PHY_Init(void)
 
 /*****************************************************************************
 *****************************************************************************/
+#ifdef PER_APP
+	extern uint8_t perAppDataBusy;
+#endif
 void PHY_DataReq(uint8_t *data, uint8_t size)
 {
 //  assert(PHY_STATE_IDLE == phyState);
-
+#ifdef PER_APP
+	phyTrxSetState(TRX_CMD_PLL_ON);
+	perAppDataBusy = true;
+#else
   phyTrxSetState(TRX_CMD_TX_ARET_ON);
+#endif
 
   HAL_PhySpiSelect();
   HAL_PhySpiWriteByte(RF_CMD_FRAME_W);
@@ -122,6 +129,8 @@ void PHY_DataReq(uint8_t *data, uint8_t size)
   phyWriteRegister(TRX_STATE_REG, TRX_CMD_TX_START);
 
   phyState = PHY_STATE_TX_WAIT_END;
+
+
 }
 
 /*****************************************************************************

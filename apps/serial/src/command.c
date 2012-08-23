@@ -51,6 +51,10 @@
 
 	// Create a 35S callback timer.
 	SYS_Timer_t rxn_timer;
+
+	// Create a variable to let the per app know it can transmit the next
+	// frame.
+	uint8_t perAppDataBusy;
 #endif
 /*****************************************************************************
 *****************************************************************************/
@@ -218,6 +222,10 @@ static void appDataConf(NWK_DataReq_t *req)
 
   appUartSendCommand((uint8_t *)&conf, sizeof(conf));
   appDataReqBusy = false;
+
+#ifdef PER_APP
+  perAppDataBusy = false;
+#endif
 
   (void)req;
 }
@@ -582,12 +590,9 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
  */
 
 #ifdef PER_APP
-//extern AppUartState_t appUartState;
 
 typedef struct PACK
 {
-//  uint8_t	   startByte;
-//  uint8_t      size;
   uint8_t      id;
   uint16_t     dst;
   uint8_t      options;
@@ -600,6 +605,8 @@ extern AppIb_t appIb; // Declared in ib.c
 extern uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
 extern uint8_t appUartCmdSize;
 
+uint8_t dumbass_flag = 0;
+
 	// We send 250 frames at 50mS intervals so we should hit
 	// the call to perSendFrame 250 times. Count the number
 	// of calls and stop it when 250 is reached.
@@ -608,9 +615,12 @@ extern uint8_t appUartCmdSize;
 	void perSendFrame(SYS_Timer_t *timer)
 	{
 
+		// If the confirm has not been received bail out.
+		// Set to true in the PHY.
+		if(perAppDataBusy)
+			return;
 
-
-//		if(per_count < 10)
+//		if(per_count < 11)
 		if(per_count < 251)
 		{
 			per_count++;
@@ -618,8 +628,6 @@ extern uint8_t appUartCmdSize;
 			// Create and send a PER frame to the RXN (0x0002). It has to
 			// Look like it came in over the UART:
 			PerAppCommandDataReq_t dr;
-			//dr.startByte = 0xab;
-			//dr.size = 14;
 			dr.id = APP_COMMAND_DATA_REQ;
 #ifdef TEST_MODE
 			dr.dst = 0x0000;
@@ -640,9 +648,12 @@ extern uint8_t appUartCmdSize;
 			memcpy(appUartCmdBuffer, (uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
 			appUartCmdSize = 14;
 
-			// Restart the timer for another 10mS interval
-		    SYS_TimerStop(&txn_timer);
-		    SYS_TimerStart(&txn_timer);
+			// Timer only has to be started once.
+			if(!dumbass_flag)
+			{
+				SYS_TimerStart(&txn_timer);
+				dumbass_flag = 1;
+			}
 		}
 		else
 		{
@@ -651,7 +662,7 @@ extern uint8_t appUartCmdSize;
 			// Turn the UART back on.
 			ota_enabled = 1;
 			phyTrxSetState(TRX_CMD_RX_ON);
-			SYS_TimerStop(timer);
+			SYS_TimerStop(&txn_timer);
 		}
 	}
 
@@ -710,12 +721,12 @@ extern uint8_t appUartCmdSize;
 		if(0x1111 == appIb.addr)
 		{
 			// Initialize the 50mS interval timer
-			txn_timer.interval = 50;
+			txn_timer.interval = 100;
 			txn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			txn_timer.handler = perSendFrame;
 
-			// Ensure the radio state is set to TX mode.
-			phyTrxSetState(TRX_CMD_PLL_ON);
+			// Init the frame send flag.
+			perAppDataBusy = false;
 
 			// Send the frame
 			perSendFrame(&txn_timer);
@@ -732,7 +743,7 @@ extern uint8_t appUartCmdSize;
 		    memset(rssi_buf, 0, 256);
 		    memset(lqi_buf, 0, 256);
 
-			// Create a 5 Second timer and callback function. When it expires
+			// Create a 20 Second timer and callback function. When it expires
 			// it should send the "test complete" frame to the PCN (0x0000).
 
 			// Initialize the 20S timer.
