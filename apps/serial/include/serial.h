@@ -37,7 +37,7 @@
 /*****************************************************************************
 *****************************************************************************/
 // A global variable to tell whether the app is using the UART or OTA.
-// ETG uint8_t ota_enabled;
+uint8_t ota_enabled;
 #ifdef PER_APP
 // Create some variables to hold results of PER testing.
 // The number of frames transmitted is always 250 for histogram purposes.

@@ -640,7 +640,7 @@ uint8_t dumbass_flag = 0;
 			dr.handle = 42;
 			// Create some pseudo-random payload data. Don't let us collide with real commands.
 			for(uint8_t i=0; i<8; i++)
-				dr.payload[i] = per_count;// & 0x0F;
+				dr.payload[i] = per_count & 0x0F;
 
 			// Fake out the UART task handler so that this frame gets sent.
 			appUartState = APP_UART_STATE_OK;
@@ -662,7 +662,7 @@ uint8_t dumbass_flag = 0;
 			ledOff();
 			per_count = 0;
 			// Turn the UART back on.
-			// ETG ota_enabled = 1;
+			ota_enabled = 1;
 			phyTrxSetState(TRX_CMD_RX_ON);
 			SYS_TimerStop(&txn_timer);
 		}
@@ -700,10 +700,10 @@ uint8_t dumbass_flag = 0;
 		SYS_PortSet(APP_PORT);
 
 		memcpy(appUartCmdBuffer, (uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
-		appUartCmdSize = 7;
+		appUartCmdSize = 8;
 
 		// Turn the UART back on.
-		// ETG ota_enabled = 1;
+		ota_enabled = 1;
 	}
 
 	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size)
@@ -713,7 +713,7 @@ uint8_t dumbass_flag = 0;
 		// AppCommandStartTest_t *req = (AppCommandStartTest_t *)buf;
 
 		// Turn off UART while PER test is running.
-		// ETG ota_enabled = 0;
+		ota_enabled = 0;
 
 		// @todo	Add logic to start the PER test here.
 		// TXN address is: 0x0001
