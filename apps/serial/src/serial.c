@@ -508,7 +508,9 @@ static void appInit(void)
 
 
 #ifdef PER_APP
-  ota_enabled = 1;
+  if ((appIb.addr == 0x1111) || (appIb.addr == 0x2222)) {
+	  ota_enabled = 1;
+  }
   memset(rssi_buf, 0, 256);
   memset(lqi_buf, 0, 256);
   per_count = 0;
