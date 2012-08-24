@@ -298,7 +298,7 @@ static void appUartAck(AppStatus_t status)
 *****************************************************************************/
 void appUartSendCommand(uint8_t *buf, uint8_t size)
 {
-	if(ota_enabled) // Don't use the UART in the PER_APP
+	if(ota_enabled == 0) // Don't use the UART in the PER_APP
 	{
 	  uint16_t crc;
 

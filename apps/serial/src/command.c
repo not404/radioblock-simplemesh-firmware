@@ -662,7 +662,7 @@ uint8_t dumbass_flag = 0;
 			ledOff();
 			per_count = 0;
 			// Turn the UART back on.
-			ota_enabled = 1;
+			// ota_enabled = 0;
 			phyTrxSetState(TRX_CMD_RX_ON);
 			SYS_TimerStop(&txn_timer);
 		}
@@ -703,7 +703,7 @@ uint8_t dumbass_flag = 0;
 		appUartCmdSize = 8;
 
 		// Turn the UART back on.
-		ota_enabled = 1;
+		// ota_enabled = 0;
 	}
 
 	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size)
@@ -713,7 +713,7 @@ uint8_t dumbass_flag = 0;
 		// AppCommandStartTest_t *req = (AppCommandStartTest_t *)buf;
 
 		// Turn off UART while PER test is running.
-		ota_enabled = 0;
+		ota_enabled = 1;
 
 		// @todo	Add logic to start the PER test here.
 		// TXN address is: 0x0001
