@@ -244,7 +244,7 @@ static void appUartRxCallback(uint16_t bytes)
 // If a character is received over the UART then turn off the PER_APP code.
 // "ota_enabled" is a flag for this.
 #ifdef PER_APP
-//	ota_enabled = 0;
+	// ETG 	ota_enabled = 0;
 #endif
 
   uint8_t byte;
@@ -508,12 +508,12 @@ static void appInit(void)
 
 
 #ifdef PER_APP
-  ota_enabled = 1;
+  // ETG  ota_enabled = 1;
   memset(rssi_buf, 0, 256);
   memset(lqi_buf, 0, 256);
   per_count = 0;
 #else
-  ota_enabled = 0;
+  // ETG   ota_enabled = 0;
 #endif
 
 }

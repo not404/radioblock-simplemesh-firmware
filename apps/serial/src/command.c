@@ -619,6 +619,8 @@ uint8_t dumbass_flag = 0;
 		// Set to true in the PHY.
 		if(perAppDataBusy)
 			return;
+		// Now its busy sending a frame...
+		//perAppDataBusy = true;
 
 //		if(per_count < 11)
 		if(per_count < 251)
@@ -638,7 +640,7 @@ uint8_t dumbass_flag = 0;
 			dr.handle = 42;
 			// Create some pseudo-random payload data. Don't let us collide with real commands.
 			for(uint8_t i=0; i<8; i++)
-				dr.payload[i] = per_count & 0x0F;
+				dr.payload[i] = per_count;// & 0x0F;
 
 			// Fake out the UART task handler so that this frame gets sent.
 			appUartState = APP_UART_STATE_OK;
@@ -660,7 +662,7 @@ uint8_t dumbass_flag = 0;
 			ledOff();
 			per_count = 0;
 			// Turn the UART back on.
-			ota_enabled = 1;
+			// ETG ota_enabled = 1;
 			phyTrxSetState(TRX_CMD_RX_ON);
 			SYS_TimerStop(&txn_timer);
 		}
@@ -701,7 +703,7 @@ uint8_t dumbass_flag = 0;
 		appUartCmdSize = 7;
 
 		// Turn the UART back on.
-		ota_enabled = 1;
+		// ETG ota_enabled = 1;
 	}
 
 	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size)
@@ -711,17 +713,19 @@ uint8_t dumbass_flag = 0;
 		// AppCommandStartTest_t *req = (AppCommandStartTest_t *)buf;
 
 		// Turn off UART while PER test is running.
-		ota_enabled = 0;
-
-		ledOn();
+		// ETG ota_enabled = 0;
 
 		// @todo	Add logic to start the PER test here.
 		// TXN address is: 0x0001
 		// RXN address is: 0x0002
 		if(0x1111 == appIb.addr)
 		{
+			// To prevent re-initialization of the timer when the test is
+			// restarted.
+			dumbass_flag = 0;
+			ledOn();
 			// Initialize the 50mS interval timer
-			txn_timer.interval = 100;
+			txn_timer.interval = 50;
 			txn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			txn_timer.handler = perSendFrame;
 
@@ -750,14 +754,14 @@ uint8_t dumbass_flag = 0;
 			rxn_timer.interval = 20000;
 			rxn_timer.mode = SYS_TIMER_PERIODIC_MODE;
 			rxn_timer.handler = perReceiveFrame;
-			SYS_TimerRestart(&rxn_timer);
+			SYS_TimerStart(&rxn_timer);
 
 			// Ensure the radio is set to RX mode.
 			phyTrxSetState(TRX_CMD_RX_ON);
 
 		}
 
-		(void)size;
+		//(void)size;
 		return APP_STATUS_SUCESS;
 	}
 
