@@ -590,16 +590,7 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
  */
 
 #ifdef PER_APP
-/*
-typedef struct PACK
-{
-  uint8_t      id;
-  uint16_t     dst;
-  uint8_t      options;
-  uint8_t      handle;
-  uint8_t	   payload[8];
-} PerAppCommandDataReq_t;
-*/
+
 PerAppCommandDataReq_t dr;
 
 extern AppIb_t appIb; // Declared in ib.c
@@ -624,7 +615,6 @@ uint8_t dumbass_flag = 0;
 		// Now its busy sending a frame...
 		//perAppDataBusy = true;
 
-//		if(per_count < 11)
 		if(per_count < 251)
 		{
 			per_count++;
@@ -645,12 +635,17 @@ uint8_t dumbass_flag = 0;
 				dr.payload[i] = per_count & 0x0F;
 
 			// Fake out the UART task handler so that this frame gets sent.
+			/*
 			appUartState = APP_UART_STATE_OK;
 			appState = APP_STATE_COMMAND_RECEIVED;
 			SYS_PortSet(APP_PORT);
 
 			memcpy(appUartCmdBuffer, (uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
 			appUartCmdSize = 14;
+			*/
+
+			// May not need to fake out UART with this - just go direct to dat request.
+			appCommandDataReqHandler((uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
 
 			// Timer only has to be started once.
 			if(!dumbass_flag)
@@ -687,6 +682,7 @@ uint8_t dumbass_flag = 0;
 		// Send PER test complete frame to PCN.
 		// Create and send a PER frame to the PCN (0x0000). It has to
 		// Look like it came in over the UART:
+
 		PerAppCommandDataReq_t dr;
 		dr.id = APP_COMMAND_DATA_REQ;
 		dr.dst = 0x0000;
@@ -702,7 +698,7 @@ uint8_t dumbass_flag = 0;
 		SYS_PortSet(APP_PORT);
 
 		memcpy(appUartCmdBuffer, (uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
-		appUartCmdSize = 8;
+		appUartCmdSize = 7;
 
 		// Turn the UART back on.
 		ota_enabled = 0;
@@ -769,14 +765,8 @@ uint8_t dumbass_flag = 0;
 
 	AppStatus_t appCommandTestCompleteHandler(uint8_t *buf, uint8_t size)
 	{
-		// Don't need or care about the parameters - They are used for
-		// command dispatcher consistency.
-		//AppCommandTestComplete_t *req = (AppCommandTestComplete_t *)buf;
-
-		// @todo	Add logic to receive the PER test complete message OTA here.
-		// The PCN is the receipient node.
-
-		(void)size;
+		/// @todo	Remove this command, not needed, sent direct form data
+		//			indication in serial.c.
 		return APP_STATUS_SUCESS;
 	}
 

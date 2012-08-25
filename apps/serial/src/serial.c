@@ -296,7 +296,9 @@ static void appUartAck(AppStatus_t status)
 
 /*****************************************************************************
 *****************************************************************************/
-extern PerAppCommandDataReq_t dr;
+#ifdef PER_APP
+	extern PerAppCommandDataReq_t dr;
+#endif
 void appUartSendCommand(uint8_t *buf, uint8_t size)
 {
 	if(ota_enabled == 0) // Don't use the UART in the PER_APP
@@ -410,10 +412,17 @@ static bool appDataInd(NWK_DataInd_t *ind)
 
   else if(ind->data[0] == APP_COMMAND_TEST_COMPLETE)
   {
-	  appUartState = APP_UART_STATE_OK;
-	  appState = APP_STATE_COMMAND_RECEIVED;
-	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandTestComplete_t));
-	  appUartCmdSize = 1;
+	// Send direct, no need to call command...
+	uint8_t results[3];
+	results[0] = APP_COMMAND_DATA_IND;
+	results[1] = APP_COMMAND_TEST_COMPLETE;
+	results[2] = ind->data[1];
+	appUartSendCommand(results, 3);
+
+	SYS_TimerStop(&appUartTimer);
+	SYS_TimerStart(&appUartTimer);
+
+	return true;
   }
 
   else if(ind->data[0] == APP_COMMAND_SEND_DATA_REQ)
@@ -442,7 +451,7 @@ static bool appDataInd(NWK_DataInd_t *ind)
 
   SYS_TimerStop(&appUartTimer);
   SYS_TimerStart(&appUartTimer);
-  return false;
+  return true;
 
 #else
   cmd.id = APP_COMMAND_DATA_IND;
