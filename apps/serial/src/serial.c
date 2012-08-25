@@ -296,6 +296,7 @@ static void appUartAck(AppStatus_t status)
 
 /*****************************************************************************
 *****************************************************************************/
+extern PerAppCommandDataReq_t dr;
 void appUartSendCommand(uint8_t *buf, uint8_t size)
 {
 	if(ota_enabled == 0) // Don't use the UART in the PER_APP
@@ -306,7 +307,7 @@ void appUartSendCommand(uint8_t *buf, uint8_t size)
 	  HAL_UartWriteByte(size);
 
 	  for (uint8_t i = 0; i < size; i++)
-	    HAL_UartWriteByte(buf[i]);
+		HAL_UartWriteByte(buf[i]);
 
 	  crc = appCrcCcitt(buf, size);
 	  HAL_UartWriteByte(crc & 0xff);

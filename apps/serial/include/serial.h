@@ -47,6 +47,16 @@ uint8_t lqi_buf[256];
 // PER frame counter.
 uint8_t per_count;
 
+typedef struct PACK
+{
+  uint8_t      id;
+  uint16_t     dst;
+  uint8_t      options;
+  uint8_t      handle;
+  uint8_t	   payload[8];
+} PerAppCommandDataReq_t;
+
+
 typedef enum AppState_t
 {
   APP_STATE_INITIAL,

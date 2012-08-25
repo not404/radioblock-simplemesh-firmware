@@ -590,7 +590,7 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
  */
 
 #ifdef PER_APP
-
+/*
 typedef struct PACK
 {
   uint8_t      id;
@@ -599,6 +599,8 @@ typedef struct PACK
   uint8_t      handle;
   uint8_t	   payload[8];
 } PerAppCommandDataReq_t;
+*/
+PerAppCommandDataReq_t dr;
 
 extern AppIb_t appIb; // Declared in ib.c
 
@@ -629,7 +631,7 @@ uint8_t dumbass_flag = 0;
 
 			// Create and send a PER frame to the RXN (0x0002). It has to
 			// Look like it came in over the UART:
-			PerAppCommandDataReq_t dr;
+			// PerAppCommandDataReq_t dr; // Make this global
 			dr.id = APP_COMMAND_DATA_REQ;
 #ifdef TEST_MODE
 			dr.dst = 0x0000;
@@ -703,7 +705,7 @@ uint8_t dumbass_flag = 0;
 		appUartCmdSize = 8;
 
 		// Turn the UART back on.
-		// ota_enabled = 0;
+		ota_enabled = 0;
 	}
 
 	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size)
