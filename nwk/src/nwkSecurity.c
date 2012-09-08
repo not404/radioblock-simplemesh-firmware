@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,10 +69,10 @@ static bool nwkSecurityProcessFrame(NwkFrame_t *frame, bool decrypt)
   uint8_t block;
   uint32_t mic;
 
-  vector[0] = ((uint32_t)frame->header->macDstPanId << 16) | 
+  vector[0] = ((uint32_t)frame->header->macDstPanId << 16) |
               ((uint32_t)(*(uint8_t *)&frame->header->nwkFcf) << 8) |
               ((uint32_t)frame->header->nwkSeq);
-  vector[1] = ((uint32_t)frame->header->nwkDstAddr << 16) | 
+  vector[1] = ((uint32_t)frame->header->nwkDstAddr << 16) |
               ((uint32_t)frame->header->nwkSrcAddr);
 
   for (uint8_t j = 0; size > 0; j++)

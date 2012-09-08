@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -129,7 +134,7 @@ void PHY_SetRxState(bool rx)
 *****************************************************************************/
 void PHY_SetChannel(uint8_t channel)
 {
-  uint8_t v = phyReadRegister(PHY_CC_CCA_REG) & 0x1f/*TODO: define*/; 
+  uint8_t v = phyReadRegister(PHY_CC_CCA_REG) & 0x1f/*TODO: define*/;
   phyWriteRegister(PHY_CC_CCA_REG, v | channel);
 }
 

@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,7 +45,7 @@
 #endif
 #define APP_PORT                       1
 
-#define APP_DEFAULT_ADDR               0x1111
+#define APP_DEFAULT_ADDR               0x0000
 #define APP_DEFAULT_PANID              0
 #define APP_DEFAULT_CHANNEL            0x0f
 #define APP_DEFAULT_RX_STATE           true

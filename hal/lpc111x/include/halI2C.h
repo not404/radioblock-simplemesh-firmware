@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,7 +47,7 @@ typedef struct HAL_I2C_t
   //uint8_t   bits;
   //uint8_t   parity;
   //uint8_t   stop;
-  uint32_t  baudrate; 
+  uint32_t  baudrate;
 
   uint8_t   *txBuffer;
   uint16_t  txBufferSize;
