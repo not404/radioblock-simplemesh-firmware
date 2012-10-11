@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,7 +77,7 @@ enum
   HAL_UART_BAUDRATE_1200   = HAL_UART_BAUDRATE(325, 12, 13),
   HAL_UART_BAUDRATE_2400   = HAL_UART_BAUDRATE(175, 11, 14),
   HAL_UART_BAUDRATE_4800   = HAL_UART_BAUDRATE(125, 1, 4),
-  HAL_UART_BAUDRATE_9600   = HAL_UART_BAUDRATE(71, 1, 10), 
+  HAL_UART_BAUDRATE_9600   = HAL_UART_BAUDRATE(71, 1, 10),
   HAL_UART_BAUDRATE_19200  = HAL_UART_BAUDRATE(23, 7, 10),
   HAL_UART_BAUDRATE_38400  = HAL_UART_BAUDRATE(11, 7, 9),
   HAL_UART_BAUDRATE_57600  = HAL_UART_BAUDRATE(7, 6, 7),
@@ -86,7 +91,7 @@ typedef struct HAL_Uart_t
   uint8_t   bits;
   uint8_t   parity;
   uint8_t   stop;
-  uint32_t  baudrate; 
+  uint32_t  baudrate;
 
   uint8_t   *txBuffer;
   uint16_t  txBufferSize;

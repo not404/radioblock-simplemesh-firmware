@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -114,7 +119,12 @@ void nwkTxFrame(NwkFrame_t *frame)
   if (0xffff == frame->header->macDstAddr)
     frame->header->macFcf = 0x8841;
   else
-    frame->header->macFcf = 0x8861;
+#ifdef PER_APP
+    frame->header->macFcf = 0x8841;
+#else
+  	frame->header->macFcf = 0x8861;
+#endif
+
 
   SYS_QueueAppend(&nwkTxQueue, frame);
   SYS_TaskSet(NWK_TX_TASK);
@@ -196,7 +206,7 @@ static void nwkTxWaitTimerHandler(SYS_Timer_t *timer)
     }
 
     if (NWK_TX_STATE_WAIT_ACK == f->state)
-      stop = false; 
+      stop = false;
   }
 
   if (stop)

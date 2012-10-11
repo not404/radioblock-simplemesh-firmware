@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

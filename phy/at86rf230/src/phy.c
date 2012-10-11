@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -70,7 +75,9 @@ typedef struct PhyIb_t
 *****************************************************************************/
 static void phyWriteRegister(uint8_t reg, uint8_t value);
 static uint8_t phyReadRegister(uint8_t reg);
-static void phyTrxSetState(uint8_t state);
+#ifndef PER_APP
+	static void phyTrxSetState(uint8_t state);
+#endif
 
 /*****************************************************************************
 *****************************************************************************/
@@ -104,11 +111,18 @@ void PHY_Init(void)
 
 /*****************************************************************************
 *****************************************************************************/
+#ifdef PER_APP
+	extern uint8_t perAppDataBusy;
+#endif
 void PHY_DataReq(uint8_t *data, uint8_t size)
 {
 //  assert(PHY_STATE_IDLE == phyState);
-
+#ifdef PER_APP
+	phyTrxSetState(TRX_CMD_PLL_ON);
+	perAppDataBusy = true;
+#else
   phyTrxSetState(TRX_CMD_TX_ARET_ON);
+#endif
 
   HAL_PhySpiSelect();
   HAL_PhySpiWriteByte(RF_CMD_FRAME_W);
@@ -120,6 +134,8 @@ void PHY_DataReq(uint8_t *data, uint8_t size)
   phyWriteRegister(TRX_STATE_REG, TRX_CMD_TX_START);
 
   phyState = PHY_STATE_TX_WAIT_END;
+
+
 }
 
 /*****************************************************************************
@@ -232,13 +248,13 @@ static void phyProcessRequests(void)
 
   if (phyIb.requests & PHY_IB_CHANNEL)
   {
-    uint8_t reg = phyReadRegister(PHY_CC_CCA_REG) & CCA_REG_CHANNEL_MASK; 
+    uint8_t reg = phyReadRegister(PHY_CC_CCA_REG) & CCA_REG_CHANNEL_MASK;
     phyWriteRegister(PHY_CC_CCA_REG, reg | phyIb.channel);
   }
 
   if (phyIb.requests & PHY_IB_TX_POWER)
   {
-    uint8_t reg = phyReadRegister(PHY_TX_PWR_REG) & TX_PWR_REG_TX_PWR_MASK; 
+    uint8_t reg = phyReadRegister(PHY_TX_PWR_REG) & TX_PWR_REG_TX_PWR_MASK;
     phyWriteRegister(PHY_TX_PWR_REG, reg | phyIb.txPower);
   }
 
@@ -277,7 +293,11 @@ static uint8_t phyReadRegister(uint8_t reg)
 
 /*****************************************************************************
 *****************************************************************************/
-static void phyTrxSetState(uint8_t state)
+#ifdef PER_APP
+	void phyTrxSetState(uint8_t state)
+#else
+	static void phyTrxSetState(uint8_t state)
+#endif
 {
   phyWriteRegister(TRX_STATE_REG, TRX_CMD_FORCE_TRX_OFF);
   phyWriteRegister(TRX_STATE_REG, state);

@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,7 +33,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 #ifndef _PHY_H_
 #define _PHY_H_
 
@@ -185,6 +190,9 @@ extern volatile int8_t      phyRxRssi;
 
 /*****************************************************************************
 *****************************************************************************/
+#ifdef PER_APP
+	void phyTrxSetState(uint8_t state);
+#endif
 void PHY_Init(void);
 void PHY_SetRxState(bool rx);
 void PHY_SetTxPower(uint8_t txPower);

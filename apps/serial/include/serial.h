@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,6 +48,55 @@ uint8_t ota_enabled;
 // The number of frames transmitted is always 250 for histogram purposes.
 uint8_t rssi_buf[256]; // These are negative numbers. Convert in pc app
 uint8_t lqi_buf[256];
+
+// PER frame counter.
+uint8_t per_count;
+
+typedef struct PACK
+{
+  uint8_t      id;
+  uint16_t     dst;
+  uint8_t      options;
+  uint8_t      handle;
+  uint8_t	   payload[8];
+} PerAppCommandDataReq_t;
+
+
+typedef enum AppState_t
+{
+  APP_STATE_INITIAL,
+  APP_STATE_WAIT_COMMAND,
+  APP_STATE_COMMAND_RECEIVED,
+  APP_STATE_PREPARE_TO_SLEEP,
+  APP_STATE_WAIT_SLEEP_CONF,
+  APP_STATE_SLEEP,
+  APP_STATE_WAKEUP,
+  APP_STATE_WAIT_WAKEUP_CONF,
+  APP_STATE_READY,
+
+  APP_STATE_RESET_REQ,
+  APP_STATE_SLEEP_REQ,
+  APP_STATE_DEFAULTS_REQ,
+  APP_STATE_UART_REQ,
+} AppState_t;
+
+typedef enum AppUartState_t
+{
+  APP_UART_STATE_IDLE,
+  APP_UART_STATE_READ_SIZE,
+  APP_UART_STATE_READ_DATA,
+  APP_UART_STATE_READ_CRC_1,
+  APP_UART_STATE_READ_CRC_2,
+  APP_UART_STATE_OK,
+  APP_UART_STATE_ERROR,
+  APP_UART_STATE_STOP,
+} AppUartState_t;
+
+AppUartState_t appUartState;
+AppState_t appState;
+
+
+#define APP_UART_CMD_BUFFER_SIZE   150
 #endif
 
 /*****************************************************************************
@@ -105,9 +159,9 @@ typedef enum AppCommandId_t
   APP_COMMAND_SET_LED_STATE_REQ     = 0x80,
 
 #ifdef PER_APP
-  APP_COMMAND_START_TEST_REQ		= 0x90,
-  APP_COMMAND_TEST_COMPLETE			= 0x91,
-  APP_COMMAND_SEND_DATA_REQ			= 0x92,
+  APP_COMMAND_START_TEST_REQ		= 0xFD,
+  APP_COMMAND_TEST_COMPLETE			= 0xFE,
+  APP_COMMAND_SEND_DATA_REQ			= 0xFF,
 #endif // PER_APP
 } AppCommandId_t;
 
@@ -177,7 +231,7 @@ typedef struct PACK
   uint8_t      bits;
   uint8_t      parity;
   uint8_t      stop;
-  uint8_t      baudrate; 
+  uint8_t      baudrate;
 } AppCommandSetUartModeReq_t;
 
 typedef struct PACK
@@ -348,6 +402,7 @@ typedef struct PACK
 	typedef struct PACK
 	{
 	  uint8_t      id;
+	  uint8_t	   total;
 	} AppCommandTestComplete_t;
 
 	typedef struct PACK

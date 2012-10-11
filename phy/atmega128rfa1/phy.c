@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,7 +34,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef PHY_ATMEGA128RFA1 
+#ifdef PHY_ATMEGA128RFA1
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -274,5 +279,5 @@ void phyTaskHandler(void)
   }
 }
 
-#endif // PHY_ATMEGA128RFA1 
+#endif // PHY_ATMEGA128RFA1
 

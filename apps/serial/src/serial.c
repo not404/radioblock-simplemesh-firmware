@@ -1,5 +1,10 @@
 /*
- * Copyright (c) 2011, SimpleMesh AUTHORS
+ * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
+ * Eric Gnoske,
+ * Colin O'Flynn
+ * Blake Leverett,
+ * Rob Fries,
+ * Colorado Micro Devices Inc..
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,7 +33,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 #include <stdio.h>
 #include <string.h>
 #include "config.h"
@@ -48,10 +53,13 @@
 #define APP_UART_TIMER_INTERVAL    100
 #define APP_UART_TX_BUFFER_SIZE    350
 #define APP_UART_RX_BUFFER_SIZE    150
-#define APP_UART_CMD_BUFFER_SIZE   150
+#ifndef PER_APP
+	#define APP_UART_CMD_BUFFER_SIZE   150
+#endif
 
 /*****************************************************************************
 *****************************************************************************/
+#ifndef PER_APP
 typedef enum AppState_t
 {
   APP_STATE_INITIAL,
@@ -70,6 +78,7 @@ typedef enum AppState_t
   APP_STATE_UART_REQ,
 } AppState_t;
 
+
 typedef enum AppUartState_t
 {
   APP_UART_STATE_IDLE,
@@ -81,6 +90,7 @@ typedef enum AppUartState_t
   APP_UART_STATE_ERROR,
   APP_UART_STATE_STOP,
 } AppUartState_t;
+#endif
 
 typedef struct PACK AppMessage_t
 {
@@ -98,15 +108,28 @@ uint32_t appSleepReqInterval;
 bool appSetDefaults = false;
 bool appUpdateUart = false;
 
-static AppState_t appState = APP_STATE_INITIAL;
+#ifdef PER_APP
+	AppState_t appState = APP_STATE_INITIAL;
+#else
+	static AppState_t appState = APP_STATE_INITIAL;
+#endif
 
 static HAL_Uart_t appUart;
 static uint8_t appUartTxBuffer[APP_UART_TX_BUFFER_SIZE];
 static uint8_t appUartRxBuffer[APP_UART_RX_BUFFER_SIZE];
-static AppUartState_t appUartState = APP_UART_STATE_IDLE;
+
+#ifdef PER_APP
+	AppUartState_t appUartState = APP_UART_STATE_IDLE;
+	uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
+	uint8_t appUartCmdSize;
+#else
+	static AppUartState_t appUartState = APP_UART_STATE_IDLE;
+	static uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
+	static uint8_t appUartCmdSize;
+#endif
 static SYS_Timer_t appUartTimer;
-static uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
-static uint8_t appUartCmdSize;
+
+
 static uint8_t appUartCmdPtr;
 static uint16_t appUartCmdCrc;
 static AppStatus_t appUartStatus;
@@ -278,19 +301,25 @@ static void appUartAck(AppStatus_t status)
 
 /*****************************************************************************
 *****************************************************************************/
+#ifdef PER_APP
+	extern PerAppCommandDataReq_t dr;
+#endif
 void appUartSendCommand(uint8_t *buf, uint8_t size)
 {
-  uint16_t crc;
+	if(ota_enabled == 0) // Don't use the UART in the PER_APP
+	{
+	  uint16_t crc;
 
-  HAL_UartWriteByte(APP_UART_START_BYTE);
-  HAL_UartWriteByte(size);
+	  HAL_UartWriteByte(APP_UART_START_BYTE);
+	  HAL_UartWriteByte(size);
 
-  for (uint8_t i = 0; i < size; i++)
-    HAL_UartWriteByte(buf[i]);
+	  for (uint8_t i = 0; i < size; i++)
+		HAL_UartWriteByte(buf[i]);
 
-  crc = appCrcCcitt(buf, size);
-  HAL_UartWriteByte(crc & 0xff);
-  HAL_UartWriteByte((crc >> 8) & 0xff);
+	  crc = appCrcCcitt(buf, size);
+	  HAL_UartWriteByte(crc & 0xff);
+	  HAL_UartWriteByte((crc >> 8) & 0xff);
+	}
 }
 
 /*****************************************************************************
@@ -306,7 +335,7 @@ static bool appDataInd(NWK_DataInd_t *ind)
   size = 1/*start*/ + 1/*size*/ + sizeof(AppCommandDataIndHeader_t) + ind->size + 2/*crc*/;
 
   if (size > HAL_UartGetFreeSize())
-    return false; 
+    return false;
 
 #ifdef LED_APP
   // ETG
@@ -319,14 +348,20 @@ static bool appDataInd(NWK_DataInd_t *ind)
 #endif // LED_APP
 
 #ifdef PER_APP
-  // This records the "histograms" of received LQI & RSSI for up to 250 frames.
-  // The histograms/arrays are passed to the PC node and post analyzed.
-  lqi_buf[cmd.lqi]++;
-  // The number was converted to a -dB value when received, it is converted
-  // here to enable our array mechanism. That is why the * -1 and then adding
-  // one. In post analysis on the PC, it will need to be turned into a negative
-  // number.
-  rssi_buf[(cmd.rssi*(-1))+1]++;
+  // Only the RXN collects data.
+#ifdef TEST_MODE
+  if(0x0000 == appIb.addr);
+#else
+  if(0x2222 == appIb.addr);
+#endif
+  {
+	  // This records the "histograms" of received LQI & RSSI for up to 250 frames.
+	  // The histograms/arrays are passed to the PC node and post analyzed.
+	  lqi_buf[ind->lqi]++;
+	  // The number was converted to a -dB value when received. We convert to uint8_t
+	  // using a cast to be safe, as avoids ever giving us an out-of-range value
+	  rssi_buf[((uint8_t)ind->rssi)]++;
+  }
 
   /*
 		Now we must extract the payload portion of the received OTA data frame
@@ -341,11 +376,11 @@ static bool appDataInd(NWK_DataInd_t *ind)
   		cmd.payload[1] = Receiver State (0 = off, 1 = on)
   	New OTA commands:
   	3. Start Test
-  		cmd.payload[0] = Command ID (0x90)
+  		cmd.payload[0] = Command ID (0xFD)
   	4. Test Complete
-  		cmd.payload[0] = Command ID (0x91)
+  		cmd.payload[0] = Command ID (0xFE)
   	5. Send Data
-  		cmd.payload[0] = Command ID (0x92)
+  		cmd.payload[0] = Command ID (0xFF)
   	6. Test Indication
 
   	Therefore, the normal data indication is 'hijacked' below...
@@ -356,26 +391,73 @@ static bool appDataInd(NWK_DataInd_t *ind)
   	The command will be processed in the "appTaskHandler" function...
    */
 
-  appUartState = APP_UART_STATE_OK;
-  appState = APP_STATE_COMMAND_RECEIVED;
   SYS_PortSet(APP_PORT);
 
   if(ind->data[0] == APP_COMMAND_SET_CHANNEL_REQ)
+  {
+	  appUartState = APP_UART_STATE_OK;
+	  appState = APP_STATE_COMMAND_RECEIVED;
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetChannelReq_t));
+  	  appUartCmdSize = 2;
+  }
   else if(ind->data[0] == APP_COMMAND_SET_RX_STATE_REQ)
+  {
+	  appUartState = APP_UART_STATE_OK;
+	  appState = APP_STATE_COMMAND_RECEIVED;
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetRxStateReq_t));
+  	  appUartCmdSize = 2;
+  }
   else if(ind->data[0] == APP_COMMAND_START_TEST_REQ)
+  {
+	  appUartState = APP_UART_STATE_OK;
+	  appState = APP_STATE_COMMAND_RECEIVED;
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandStartTest_t));
+  	  appUartCmdSize = 1;
+  }
+
   else if(ind->data[0] == APP_COMMAND_TEST_COMPLETE)
-	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandTestComplete_t));
+  {
+	// Send direct, no need to call command...
+	uint8_t results[3];
+	results[0] = APP_COMMAND_DATA_IND;
+	results[1] = APP_COMMAND_TEST_COMPLETE;
+	results[2] = ind->data[1];
+	appUartSendCommand(results, 3);
+
+	SYS_TimerStop(&appUartTimer);
+	SYS_TimerStart(&appUartTimer);
+
+	return true;
+  }
+
   else if(ind->data[0] == APP_COMMAND_SEND_DATA_REQ)
+  {
+	  appUartState = APP_UART_STATE_OK;
+	  appState = APP_STATE_COMMAND_RECEIVED;
 	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSendTestData_t));
+	  appUartCmdSize = 1;
+  }
+  else // If this is not an OTA command then do the normal thing.
+  {
+  	cmd.id = APP_COMMAND_DATA_IND;
+	cmd.src = ind->src;
+	cmd.options = (ind->options.ack << 0) | (ind->options.security << 1);
+	cmd.lqi = ind->lqi;
+	cmd.rssi = ind->rssi;
+	memcpy(cmd.payload, ind->data, ind->size);
 
-  return false;
+	appUartSendCommand((uint8_t *)&cmd, sizeof(AppCommandDataIndHeader_t) + ind->size);
 
+	SYS_TimerStop(&appUartTimer);
+	SYS_TimerStart(&appUartTimer);
 
-//  SYS_TimerStop(&appUartTimer);
-//  SYS_TimerStart(&appUartTimer);
+	return true;
+	}
+
+  SYS_TimerStop(&appUartTimer);
+  SYS_TimerStart(&appUartTimer);
+  return true;
+
 #else
   cmd.id = APP_COMMAND_DATA_IND;
   cmd.src = ind->src;
@@ -441,9 +523,12 @@ static void appInit(void)
 
 
 #ifdef PER_APP
-  ota_enabled = 1;
+  if ((appIb.addr == 0x1111) || (appIb.addr == 0x2222)) {
+	  ota_enabled = 1;
+  }
   memset(rssi_buf, 0, 256);
   memset(lqi_buf, 0, 256);
+  per_count = 0;
 #else
   ota_enabled = 0;
 #endif
