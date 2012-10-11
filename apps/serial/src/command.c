@@ -494,7 +494,7 @@ AppStatus_t appCommandSetAckStateReqHandler(uint8_t *buf, uint8_t size)
 *****************************************************************************/
 AppStatus_t appCommandGetAckStateReqHandler(uint8_t *buf, uint8_t size)
 {
-  response.ackState.id = APP_COMMAND_GET_TX_POWER_RESP;
+  response.ackState.id = APP_COMMAND_GET_ACK_STATE_RESP;
   response.ackState.state = appIb.ackState;
   responseSize = sizeof(AppCommandGetAckStateResp_t);
 
