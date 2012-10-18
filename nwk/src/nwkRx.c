@@ -108,10 +108,12 @@ void PHY_DataInd(PHY_DataInd_t *ind)
 {
   NwkFrame_t *frame;
 
+#if !SNIFFER
   if (0x88 != ind->data[1] || (0x61 != ind->data[0] && 0x41 != ind->data[0]) ||
       ind->size < sizeof(NwkFrameHeader_t) ||
       nwkRxRequests & NWK_RX_SLEEP_REQUEST)
     return;
+#endif
 
   if (NULL == (frame = nwkFrameAlloc(ind->size - sizeof(NwkFrameHeader_t))))
     return;
@@ -219,6 +221,10 @@ static uint8_t nwkRxProcessReceivedFrame(NwkFrame_t *frame)
 {
   NwkFrameHeader_t *header = frame->header;
 
+#if SNIFFER
+  return NWK_RX_STATE_INDICATE;
+#endif
+
   nwkRouteFrameReceived(frame);
 
   if (nwkIb.addr == header->nwkSrcAddr)
@@ -278,7 +284,12 @@ static void nwkRxIndicateFrame(NwkFrame_t *frame)
   ind.rssi = frame->rx.rssi;
 
   if (nwkIb.ind[ind.port](&ind) && frame->header->nwkFcf.ackRequest)
+#if SNIFFER
+	frame->state = NWK_RX_STATE_FINISH;
+#else
     frame->state = NWK_RX_STATE_ACKNOWLEDGE;
+#endif
+
   else
     frame->state = NWK_RX_STATE_FINISH;
 

@@ -53,13 +53,10 @@
 #define APP_UART_TIMER_INTERVAL    100
 #define APP_UART_TX_BUFFER_SIZE    350
 #define APP_UART_RX_BUFFER_SIZE    150
-#ifndef PER_APP
-	#define APP_UART_CMD_BUFFER_SIZE   150
-#endif
+#define APP_UART_CMD_BUFFER_SIZE   150
 
 /*****************************************************************************
 *****************************************************************************/
-#ifndef PER_APP
 typedef enum AppState_t
 {
   APP_STATE_INITIAL,
@@ -90,7 +87,6 @@ typedef enum AppUartState_t
   APP_UART_STATE_ERROR,
   APP_UART_STATE_STOP,
 } AppUartState_t;
-#endif
 
 typedef struct PACK AppMessage_t
 {
@@ -102,26 +98,26 @@ typedef struct PACK AppMessage_t
 static void appUartAck(AppStatus_t status);
 static void appUartInit(void);
 
+#if SNIFFER
+	extern void appCommandStartSniffer(void);
+	extern void appCommandStopSniffer(void);
+#endif
+
 /*****************************************************************************
 *****************************************************************************/
 uint32_t appSleepReqInterval;
 bool appSetDefaults = false;
 bool appUpdateUart = false;
-
-#ifdef PER_APP
-	AppState_t appState = APP_STATE_INITIAL;
-#else
-	static AppState_t appState = APP_STATE_INITIAL;
-#endif
+static AppState_t appState = APP_STATE_INITIAL;
 
 static HAL_Uart_t appUart;
 static uint8_t appUartTxBuffer[APP_UART_TX_BUFFER_SIZE];
 static uint8_t appUartRxBuffer[APP_UART_RX_BUFFER_SIZE];
 
-#ifdef PER_APP
+#if SNIFFER
 	AppUartState_t appUartState = APP_UART_STATE_IDLE;
 	uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
-	uint8_t appUartCmdSize;
+	static uint8_t appUartCmdSize;
 #else
 	static AppUartState_t appUartState = APP_UART_STATE_IDLE;
 	static uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
@@ -246,12 +242,6 @@ static void appUartTimerHandler(SYS_Timer_t *timer)
 *****************************************************************************/
 static void appUartRxCallback(uint16_t bytes)
 {
-// If a character is received over the UART then turn off the PER_APP code.
-// "ota_enabled" is a flag for this.
-#ifdef PER_APP
-	ota_enabled = 0;
-#endif
-
   uint8_t byte;
 
   for (uint16_t i = 0; i < bytes; i++)
@@ -301,25 +291,20 @@ static void appUartAck(AppStatus_t status)
 
 /*****************************************************************************
 *****************************************************************************/
-#ifdef PER_APP
-	extern PerAppCommandDataReq_t dr;
-#endif
 void appUartSendCommand(uint8_t *buf, uint8_t size)
 {
-	if(ota_enabled == 0) // Don't use the UART in the PER_APP
-	{
-	  uint16_t crc;
+	uint16_t crc;
 
-	  HAL_UartWriteByte(APP_UART_START_BYTE);
-	  HAL_UartWriteByte(size);
+	HAL_UartWriteByte(APP_UART_START_BYTE);
+	HAL_UartWriteByte(size);
 
-	  for (uint8_t i = 0; i < size; i++)
-		HAL_UartWriteByte(buf[i]);
+	for (uint8_t i = 0; i < size; i++)
+	HAL_UartWriteByte(buf[i]);
 
-	  crc = appCrcCcitt(buf, size);
-	  HAL_UartWriteByte(crc & 0xff);
-	  HAL_UartWriteByte((crc >> 8) & 0xff);
-	}
+	crc = appCrcCcitt(buf, size);
+	HAL_UartWriteByte(crc & 0xff);
+	HAL_UartWriteByte((crc >> 8) & 0xff);
+
 }
 
 /*****************************************************************************
@@ -337,6 +322,13 @@ static bool appDataInd(NWK_DataInd_t *ind)
   if (size > HAL_UartGetFreeSize())
     return false;
 
+  cmd.id = APP_COMMAND_DATA_IND;
+  cmd.src = ind->src;
+  cmd.options = (ind->options.ack << 0) | (ind->options.security << 1);
+  cmd.lqi = ind->lqi;
+  cmd.rssi = ind->rssi;
+  memcpy(cmd.payload, ind->data, ind->size);
+
 #ifdef LED_APP
   // ETG
   // Interrogate the payload. If byte [0] = 'O', turn the LED off,
@@ -347,127 +339,8 @@ static bool appDataInd(NWK_DataInd_t *ind)
   	ledOff();
 #endif // LED_APP
 
-#ifdef PER_APP
-  // Only the RXN collects data.
-#ifdef TEST_MODE
-  if(0x0000 == appIb.addr);
-#else
-  if(0x2222 == appIb.addr);
-#endif
-  {
-	  // This records the "histograms" of received LQI & RSSI for up to 250 frames.
-	  // The histograms/arrays are passed to the PC node and post analyzed.
-	  lqi_buf[ind->lqi]++;
-	  // The number was converted to a -dB value when received. We convert to uint8_t
-	  // using a cast to be safe, as avoids ever giving us an out-of-range value
-	  rssi_buf[((uint8_t)ind->rssi)]++;
-  }
-
-  /*
-		Now we must extract the payload portion of the received OTA data frame
-  	which contains an encapsulated "command". The supported commands and
-  	payload formats are:
-  	1. Set Channel Request
-		cmd.payload[0] = Command ID (0x29)
-  		cmd.payload[1] = Address LSB
-  		cmd.payload[2] = Address MSB
-  	2. Set Receiver State Request
-  		cmd.payload[0] = Command ID (0x2C)
-  		cmd.payload[1] = Receiver State (0 = off, 1 = on)
-  	New OTA commands:
-  	3. Start Test
-  		cmd.payload[0] = Command ID (0xFD)
-  	4. Test Complete
-  		cmd.payload[0] = Command ID (0xFE)
-  	5. Send Data
-  		cmd.payload[0] = Command ID (0xFF)
-  	6. Test Indication
-
-  	Therefore, the normal data indication is 'hijacked' below...
-  	We actually need to make it appear as if the command came in over the
-  	UART so we hijack pieces of the "appUartStateMachine" function as
-  	well.
-
-  	The command will be processed in the "appTaskHandler" function...
-   */
-
-  SYS_PortSet(APP_PORT);
-
-  if(ind->data[0] == APP_COMMAND_SET_CHANNEL_REQ)
-  {
-	  appUartState = APP_UART_STATE_OK;
-	  appState = APP_STATE_COMMAND_RECEIVED;
-	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetChannelReq_t));
-  	  appUartCmdSize = 2;
-  }
-  else if(ind->data[0] == APP_COMMAND_SET_RX_STATE_REQ)
-  {
-	  appUartState = APP_UART_STATE_OK;
-	  appState = APP_STATE_COMMAND_RECEIVED;
-	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSetRxStateReq_t));
-  	  appUartCmdSize = 2;
-  }
-  else if(ind->data[0] == APP_COMMAND_START_TEST_REQ)
-  {
-	  appUartState = APP_UART_STATE_OK;
-	  appState = APP_STATE_COMMAND_RECEIVED;
-	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandStartTest_t));
-  	  appUartCmdSize = 1;
-  }
-
-  else if(ind->data[0] == APP_COMMAND_TEST_COMPLETE)
-  {
-	// Send direct, no need to call command...
-	uint8_t results[3];
-	results[0] = APP_COMMAND_DATA_IND;
-	results[1] = APP_COMMAND_TEST_COMPLETE;
-	results[2] = ind->data[1];
-	appUartSendCommand(results, 3);
-
-	SYS_TimerStop(&appUartTimer);
-	SYS_TimerStart(&appUartTimer);
-
-	return true;
-  }
-
-  else if(ind->data[0] == APP_COMMAND_SEND_DATA_REQ)
-  {
-	  appUartState = APP_UART_STATE_OK;
-	  appState = APP_STATE_COMMAND_RECEIVED;
-	  memcpy(appUartCmdBuffer, ind->data, sizeof(AppCommandSendTestData_t));
-	  appUartCmdSize = 1;
-  }
-  else // If this is not an OTA command then do the normal thing.
-  {
-  	cmd.id = APP_COMMAND_DATA_IND;
-	cmd.src = ind->src;
-	cmd.options = (ind->options.ack << 0) | (ind->options.security << 1);
-	cmd.lqi = ind->lqi;
-	cmd.rssi = ind->rssi;
-	memcpy(cmd.payload, ind->data, ind->size);
-
-	appUartSendCommand((uint8_t *)&cmd, sizeof(AppCommandDataIndHeader_t) + ind->size);
-
-	SYS_TimerStop(&appUartTimer);
-	SYS_TimerStart(&appUartTimer);
-
-	return true;
-	}
-
-  SYS_TimerStop(&appUartTimer);
-  SYS_TimerStart(&appUartTimer);
-  return true;
-
-#else
-  cmd.id = APP_COMMAND_DATA_IND;
-  cmd.src = ind->src;
-  cmd.options = (ind->options.ack << 0) | (ind->options.security << 1);
-  cmd.lqi = ind->lqi;
-  cmd.rssi = ind->rssi;
-  memcpy(cmd.payload, ind->data, ind->size);
-
   appUartSendCommand((uint8_t *)&cmd, sizeof(AppCommandDataIndHeader_t) + ind->size);
-#endif // PER_APP
+
 
   return true;
 }
@@ -521,18 +394,6 @@ static void appInit(void)
   appState = APP_STATE_WAIT_COMMAND;
   appSetDefaults = false;
 
-
-#ifdef PER_APP
-  if ((appIb.addr == 0x1111) || (appIb.addr == 0x2222)) {
-	  ota_enabled = 1;
-  }
-  memset(rssi_buf, 0, 256);
-  memset(lqi_buf, 0, 256);
-  per_count = 0;
-#else
-  ota_enabled = 0;
-#endif
-
 }
 
 /*****************************************************************************
@@ -561,6 +422,27 @@ static void appTaskHandler(void)
 
       if (APP_STATUS_SUCESS == status)
       {
+#if SNIFFER
+    	if (APP_COMMAND_START_SNIFFER_REQ == appUartCmdBuffer[0])
+    	{
+    		// Reset the radio into sniffer mode.
+    		appCommandStartSniffer();
+
+
+    		//appState = APP_STATE_SNIFFER_MODE;
+    		//appUartState = APP_UART_STATE_STOP;
+
+    	}
+
+    	if (APP_COMMAND_STOP_SNIFFER_REQ == appUartCmdBuffer[0])
+    	{
+    		NWK_Init();
+    		NWK_PortOpen(APP_PORT, appTaskHandler, appDataInd);
+    	}
+
+		appState = APP_STATE_WAIT_COMMAND;
+		appUartState = APP_UART_STATE_IDLE;
+#endif
         if (APP_COMMAND_RESET_REQ == appUartCmdBuffer[0])
         {
           appState = APP_STATE_RESET_REQ;
@@ -654,11 +536,27 @@ void NWK_WakeupConf(void)
 *****************************************************************************/
 int main(void)
 {
+#if SNIFFER
+	sniffFlag = 0;
+
+	uint8_t radioReg[48];
+	uint8_t z = 0;
+#endif
   NWK_Init();
   NWK_PortOpen(APP_PORT, appTaskHandler, appDataInd);
 
   while (1)
   {
+#if SNIFFER
+	  if(sniffFlag)
+		  sendSnifferResults(); // Process a received frame.
+	  if(z) // Set in JTAG debug to dump radio registers.
+	  {
+		  for(uint8_t i = 0; i<48; i++)
+			  radioReg[i] = phyReadRegisterInline(i);
+		  z = 0;
+	  }
+#endif
     SYS_TaskRun();
   }
 
