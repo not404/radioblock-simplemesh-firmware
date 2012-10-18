@@ -43,24 +43,13 @@
 #include "halUart.h"
 #include "serial.h"
 #include "led.h"
-#ifdef PER_APP
-	#include "sysTimer.h"
-	#include "phy.h"
-#endif
 
 /*****************************************************************************
 *****************************************************************************/
-#ifdef PER_APP
-	// Create a 50mS callback timer.
-	SYS_Timer_t txn_timer;
-
-	// Create a 35S callback timer.
-	SYS_Timer_t rxn_timer;
-
-	// Create a variable to let the per app know it can transmit the next
-	// frame.
-	uint8_t perAppDataBusy;
+#if SNIFFER
+	extern PhyIb_t phyIb;
 #endif
+
 /*****************************************************************************
 *****************************************************************************/
 #define AT_LEAST     0x80
@@ -90,10 +79,9 @@ AppStatus_t appCommandSetAckStateReqHandler(uint8_t *buf, uint8_t size);
 AppStatus_t appCommandGetAckStateReqHandler(uint8_t *buf, uint8_t size);
 AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size);
 
-#ifdef PER_APP
-	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size);
-	AppStatus_t appCommandTestCompleteHandler(uint8_t *buf, uint8_t size);
-	AppStatus_t appCommandSendTestDataReqHandler(uint8_t *buf, uint8_t size);
+#if SNIFFER
+	void appCommandStartSniffer(void);
+	void appCommandStopSniffer(void);
 #endif
 
 static void appDataConf(NWK_DataReq_t *req);
@@ -142,11 +130,9 @@ static AppCommandRecord_t records[] =
   { APP_COMMAND_SET_ACK_STATE_REQ,    sizeof(AppCommandSetAckStateReq_t),     appCommandSetAckStateReqHandler },
   { APP_COMMAND_GET_ACK_STATE_REQ,    sizeof(AppCommandGetAckStateReq_t),     appCommandGetAckStateReqHandler },
   { APP_COMMAND_SET_LED_STATE_REQ,    sizeof(AppCommandSetLedStateReq_t),     appCommandSetLedStateReqHandler },
-#ifdef PER_APP
-  { APP_COMMAND_START_TEST_REQ,    	  sizeof(AppCommandStartTest_t),          appCommandStartTestReqHandler },
-  { APP_COMMAND_TEST_COMPLETE,        sizeof(AppCommandTestComplete_t),       appCommandTestCompleteHandler },
-  { APP_COMMAND_SEND_DATA_REQ,        sizeof(AppCommandSendTestData_t),       appCommandSendTestDataReqHandler },
-
+#if SNIFFER
+	{ APP_COMMAND_START_SNIFFER_REQ,   	1,       (void *) appCommandStartSniffer },
+	{ APP_COMMAND_STOP_SNIFFER_REQ,    	1,        (void *) appCommandStopSniffer },
 #endif
 };
 
@@ -227,10 +213,6 @@ static void appDataConf(NWK_DataReq_t *req)
 
   appUartSendCommand((uint8_t *)&conf, sizeof(conf));
   appDataReqBusy = false;
-
-#ifdef PER_APP
-  perAppDataBusy = false;
-#endif
 
   (void)req;
 }
@@ -571,223 +553,90 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
 
 /*****************************************************************************
 *****************************************************************************/
+#if SNIFFER
+
+void writeRegister(uint8_t reg, uint8_t value)
+{
+  HAL_PhySpiSelect();
+  HAL_PhySpiWriteByteInline(RF_CMD_REG_W | reg);
+  HAL_PhySpiWriteByteInline(value);
+  HAL_PhySpiDeselect();
+}
+
+extern AppIb_t appIb;
+#include "nwkPrivate.h"
 
 /*
- * PER IMPLEMENTATION NOTES!
- *
- * The TXN will transmit 20 byte pseudo-random frames at 10 mS
- * intervals. It will transmit 250 frames. After frame transmission
- * is complete it will return to RX mode.
- *
- * The RXN will set a timer for 5 seconds which is 2x the time
- * required for it to receive the 250 frames.
- *
- * When the timer expires it will send the "test complete" frame
- * to the PCN.
- *
- * This will prompt the PCN to send a "send data" frame to the RXN
- * and the RXN will send three 64 byte payload frames and then a 58
- * byte payload frame (250 bytes of test data) - This will be LQI
- * data. The 4 frames will be repeated to send the RSSI data.
- *
- * The PCN will then post process the LQI and RSSI data to determine
- * PER results.
- */
+ * Sniffer implementation.
+*/
+void appCommandStartSniffer(void)
+{
+	uint16_t addr = 0;
 
-#ifdef PER_APP
+	// Reset the radio.
+	HAL_PhyReset();
 
-PerAppCommandDataReq_t dr;
+	// Reset some of the phyIb.
+	phyIb.requests = PHY_IB_NONE;
 
-extern AppIb_t appIb; // Declared in ib.c
+	addr = phyReadRegisterInline(SHORT_ADDR_1_REG);
+	addr <<= 8;
+	addr |= phyReadRegisterInline(SHORT_ADDR_0_REG);
 
-extern uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
-extern uint8_t appUartCmdSize;
+	// Set both the information bases.
+	phyIb.addr = addr;
+	appIb.addr = addr;
+	nwkIb.addr = addr;
 
-uint8_t dumbass_flag = 0;
 
-	// We send 250 frames at 50mS intervals so we should hit
-	// the call to perSendFrame 250 times. Count the number
-	// of calls and stop it when 250 is reached.
-	// uint8_t per_count = 0; is declared in serial.h and initialized
-	// in the appInit function in serial.c.
-	void perSendFrame(SYS_Timer_t *timer)
-	{
+	addr = phyReadRegisterInline(PAN_ID_0_REG);
+	addr <<= 8;
+	addr |= phyReadRegisterInline(PAN_ID_0_REG);
 
-		// If the confirm has not been received bail out.
-		// Set to true in the PHY.
-		if(perAppDataBusy)
-			return;
-		// Now its busy sending a frame...
-		//perAppDataBusy = true;
+	// Set both the information bases.
+	phyIb.panId = addr;
+	appIb.panId = addr;
+	nwkIb.panId = addr;
 
-		if(per_count < 251)
-		{
-			per_count++;
+	phyIb.rx = true;
+	phyIb.txPower = 0;
+	phyState = PHY_STATE_IDLE;
 
-			// Create and send a PER frame to the RXN (0x0002). It has to
-			// Look like it came in over the UART:
-			// PerAppCommandDataReq_t dr; // Make this global
-			dr.id = APP_COMMAND_DATA_REQ;
-#ifdef TEST_MODE
-			dr.dst = 0x0000;
-#else
-			dr.dst = 0x2222;
-#endif
-			dr.options = 0;
-			dr.handle = 42;
-			// Create some pseudo-random payload data. Don't let us collide with real commands.
-			for(uint8_t i=0; i<8; i++)
-				dr.payload[i] = per_count & 0x0F;
+    // Turn on the promiscuous bit. Sniffer Mode.
+	phyWriteRegisterInline(XAH_CTRL_1_REG, 0x02);
+	// Reserved frame mode.
+//	phyWriteRegisterInline(XAH_CTRL_1_REG, 0x12);
 
-			// Fake out the UART task handler so that this frame gets sent.
-			/*
-			appUartState = APP_UART_STATE_OK;
-			appState = APP_STATE_COMMAND_RECEIVED;
-			SYS_PortSet(APP_PORT);
+//	phyWriteRegisterInline(XAH_CTRL_0_REG, 0x00);
 
-			memcpy(appUartCmdBuffer, (uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
-			appUartCmdSize = 14;
-			*/
+//	phyWriteRegisterInline(TRX_CTRL_2_REG, 0x00);
 
-			// May not need to fake out UART with this - just go direct to dat request.
-			appCommandDataReqHandler((uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
+    // Disable ACKs in promiscuous mode.
+	phyWriteRegisterInline(CSMA_SEED_1_REG, 0x10);
 
-			// Timer only has to be started once.
-			if(!dumbass_flag)
-			{
-				SYS_TimerStart(&txn_timer);
-				dumbass_flag = 1;
-			}
-		}
-		else
-		{
-			ledOff();
-			per_count = 0;
-			// Turn the UART back on.
-			// ota_enabled = 0;
-			phyTrxSetState(TRX_CMD_RX_ON);
-			SYS_TimerStop(&txn_timer);
-		}
-	}
+    // Received frames are indicated by both RX_START & TRX End bits.
+	phyWriteRegisterInline(IRQ_MASK_REG, (RX_START_MASK | TRX_END_MASK));
 
-	void perReceiveFrame(SYS_Timer_t *timer)
-	{
-		ledOff();
+    //Force transition to TRX_OFF.
+	//phyTrxSetState(TRX_CMD_FORCE_TRX_OFF);
+	phyWriteRegisterInline(TRX_STATE_REG, TRX_CMD_FORCE_TRX_OFF);
 
-		//Stop the timer (should only occur once anyway)...
-		SYS_TimerStop(&rxn_timer);
+    // Put radio into PLL_ON before transition to RX_AACK mode
+    phyTrxSetState(TRX_CMD_PLL_ON);
 
-		// Total frames received for inclusion
-		uint8_t totalFrames = 0;
+    // Put radio into RX_AACK mode
+    phyTrxSetState(TRX_CMD_RX_AACK_ON);
+	// Put the radio into Sniffer mode.
+}
 
-		for(int i = 0; i < 256; i++) {
-			totalFrames += lqi_buf[i];
-		}
+void appCommandStopSniffer(void)
+{
+	// Reset the radio.
+	
+	// Reinitialize the radio.
+}
+#endif // SNIFFER
 
-		// Send PER test complete frame to PCN.
-		// Create and send a PER frame to the PCN (0x0000). It has to
-		// Look like it came in over the UART:
-
-		PerAppCommandDataReq_t dr;
-		dr.id = APP_COMMAND_DATA_REQ;
-		dr.dst = 0x0000;
-		dr.options = 0;
-		dr.handle = 42;
-		// Insert the OTA "Test Complete" ID.
-		dr.payload[0] = APP_COMMAND_TEST_COMPLETE;
-		dr.payload[1] = totalFrames;
-
-		// Fake out the UART task handler so that this frame gets sent.
-		appUartState = APP_UART_STATE_OK;
-		appState = APP_STATE_COMMAND_RECEIVED;
-		SYS_PortSet(APP_PORT);
-
-		memcpy(appUartCmdBuffer, (uint8_t *)&dr, sizeof(PerAppCommandDataReq_t));
-		appUartCmdSize = 7;
-
-		// Turn the UART back on.
-		ota_enabled = 0;
-	}
-
-	AppStatus_t appCommandStartTestReqHandler(uint8_t *buf, uint8_t size)
-	{
-		// Don't need or care about the parameters - They are used for
-		// command dispatcher consistency.
-		// AppCommandStartTest_t *req = (AppCommandStartTest_t *)buf;
-
-		// Turn off UART while PER test is running.
-		ota_enabled = 1;
-
-		// @todo	Add logic to start the PER test here.
-		// TXN address is: 0x0001
-		// RXN address is: 0x0002
-		if(0x1111 == appIb.addr)
-		{
-			// To prevent re-initialization of the timer when the test is
-			// restarted.
-			dumbass_flag = 0;
-			ledOn();
-			// Initialize the 50mS interval timer
-			txn_timer.interval = 50;
-			txn_timer.mode = SYS_TIMER_PERIODIC_MODE;
-			txn_timer.handler = perSendFrame;
-
-			// Init the frame send flag.
-			perAppDataBusy = false;
-
-			// Send the frame
-			perSendFrame(&txn_timer);
-
-		}
-#ifdef TEST_MODE
-		else if(0x0000 == appIb.addr)
-#else
-		else if(0x2222 == appIb.addr)
-#endif
-		{
-			ledOn();
-			// Init the two buffers/histograms.
-		    memset(rssi_buf, 0, 256);
-		    memset(lqi_buf, 0, 256);
-
-			// Create a 20 Second timer and callback function. When it expires
-			// it should send the "test complete" frame to the PCN (0x0000).
-
-			// Initialize the 20S timer.
-			rxn_timer.interval = 20000;
-			rxn_timer.mode = SYS_TIMER_PERIODIC_MODE;
-			rxn_timer.handler = perReceiveFrame;
-			SYS_TimerStart(&rxn_timer);
-
-			// Ensure the radio is set to RX mode.
-			phyTrxSetState(TRX_CMD_RX_ON);
-
-		}
-
-		//(void)size;
-		return APP_STATUS_SUCESS;
-	}
-
-	AppStatus_t appCommandTestCompleteHandler(uint8_t *buf, uint8_t size)
-	{
-		/// @todo	Remove this command, not needed, sent direct form data
-		//			indication in serial.c.
-		return APP_STATUS_SUCESS;
-	}
-
-	AppStatus_t appCommandSendTestDataReqHandler(uint8_t *buf, uint8_t size)
-	{
-		// Don't need or care about the parameters - They are used for
-		// command dispatcher consistency.
-		//AppCommandSendTestData_t *req = (AppCommandSendTestData_t *)buf;
-
-		// @todo	Add logic to send the PER test data OTA here.
-		// The RXN is the recipient node here.
-
-		(void)size;
-		return APP_STATUS_SUCESS;
-	}
-#endif
 
 /*****************************************************************************
 *****************************************************************************/

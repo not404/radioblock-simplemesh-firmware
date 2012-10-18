@@ -119,11 +119,7 @@ void nwkTxFrame(NwkFrame_t *frame)
   if (0xffff == frame->header->macDstAddr)
     frame->header->macFcf = 0x8841;
   else
-#ifdef PER_APP
-    frame->header->macFcf = 0x8841;
-#else
-  	frame->header->macFcf = 0x8861;
-#endif
+  frame->header->macFcf = 0x8861;
 
 
   SYS_QueueAppend(&nwkTxQueue, frame);

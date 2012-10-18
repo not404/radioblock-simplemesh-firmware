@@ -41,63 +41,7 @@
 
 /*****************************************************************************
 *****************************************************************************/
-// A global variable to tell whether the app is using the UART or OTA.
-uint8_t ota_enabled;
-#ifdef PER_APP
-// Create some variables to hold results of PER testing.
-// The number of frames transmitted is always 250 for histogram purposes.
-uint8_t rssi_buf[256]; // These are negative numbers. Convert in pc app
-uint8_t lqi_buf[256];
 
-// PER frame counter.
-uint8_t per_count;
-
-typedef struct PACK
-{
-  uint8_t      id;
-  uint16_t     dst;
-  uint8_t      options;
-  uint8_t      handle;
-  uint8_t	   payload[8];
-} PerAppCommandDataReq_t;
-
-
-typedef enum AppState_t
-{
-  APP_STATE_INITIAL,
-  APP_STATE_WAIT_COMMAND,
-  APP_STATE_COMMAND_RECEIVED,
-  APP_STATE_PREPARE_TO_SLEEP,
-  APP_STATE_WAIT_SLEEP_CONF,
-  APP_STATE_SLEEP,
-  APP_STATE_WAKEUP,
-  APP_STATE_WAIT_WAKEUP_CONF,
-  APP_STATE_READY,
-
-  APP_STATE_RESET_REQ,
-  APP_STATE_SLEEP_REQ,
-  APP_STATE_DEFAULTS_REQ,
-  APP_STATE_UART_REQ,
-} AppState_t;
-
-typedef enum AppUartState_t
-{
-  APP_UART_STATE_IDLE,
-  APP_UART_STATE_READ_SIZE,
-  APP_UART_STATE_READ_DATA,
-  APP_UART_STATE_READ_CRC_1,
-  APP_UART_STATE_READ_CRC_2,
-  APP_UART_STATE_OK,
-  APP_UART_STATE_ERROR,
-  APP_UART_STATE_STOP,
-} AppUartState_t;
-
-AppUartState_t appUartState;
-AppState_t appState;
-
-
-#define APP_UART_CMD_BUFFER_SIZE   150
-#endif
 
 /*****************************************************************************
 *****************************************************************************/
@@ -157,12 +101,13 @@ typedef enum AppCommandId_t
   APP_COMMAND_GET_ACK_STATE_RESP    = 0x37,
 
   APP_COMMAND_SET_LED_STATE_REQ     = 0x80,
-
-#ifdef PER_APP
-  APP_COMMAND_START_TEST_REQ		= 0xFD,
-  APP_COMMAND_TEST_COMPLETE			= 0xFE,
-  APP_COMMAND_SEND_DATA_REQ			= 0xFF,
-#endif // PER_APP
+  
+#if SNIFFER
+	APP_COMMAND_START_SNIFFER_REQ   = 0x90,
+	APP_COMMAND_START_SNIFFER_RESP  = 0x91,
+	APP_COMMAND_STOP_SNIFFER_REQ	= 0x92,
+	APP_COMMAND_STOP_SNIFFER_RESP	= 0x93,
+#endif
 } AppCommandId_t;
 
 enum
@@ -393,23 +338,18 @@ typedef struct PACK
   uint8_t      ledState;
 } AppCommandSetLedStateReq_t;
 
-#ifdef PER_APP
+#if SNIFFER
 	typedef struct PACK
 	{
 	  uint8_t      id;
-	} AppCommandStartTest_t;
+	} AppCommandStartSniffer_t;
 
 	typedef struct PACK
 	{
 	  uint8_t      id;
-	  uint8_t	   total;
-	} AppCommandTestComplete_t;
-
-	typedef struct PACK
-	{
-	  uint8_t      id;
-	} AppCommandSendTestData_t;
+	} AppCommandStopSniffer_t;
 #endif
+
 
 /*****************************************************************************
 *****************************************************************************/

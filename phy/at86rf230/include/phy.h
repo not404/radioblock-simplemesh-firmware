@@ -64,11 +64,13 @@ enum
   PHY_ED_LEVEL_REG = 0x07,
   PHY_CC_CCA_REG   = 0x08,
   CCA_THRESH_REG   = 0x09,
+  TRX_CTRL_2_REG   = 0x0c,
   IRQ_MASK_REG     = 0x0e,
   IRQ_STATUS_REG   = 0x0f,
   VREG_CTRL_REG    = 0x10,
   BATMON_REG       = 0x11,
   XOSC_CTRL_REG    = 0x12,
+  XAH_CTRL_1_REG   = 0x17, // ETG - To turn on promiscuous mode for sniffing.
   PLL_CF_REG       = 0x1a,
   PLL_DCU_REG      = 0x1b,
   PART_NUM_REG     = 0x1c,
@@ -87,6 +89,7 @@ enum
   IEEE_ADDR_5_REG  = 0x29,
   IEEE_ADDR_6_REG  = 0x2a,
   IEEE_ADDR_7_REG  = 0x2b,
+  XAH_CTRL_0_REG   = 0x2c,
   CSMA_SEED_0_REG  = 0x2d,
   CSMA_SEED_1_REG  = 0x2e,
 };
@@ -182,6 +185,34 @@ typedef struct PHY_DataInd_t
   int8_t     rssi;
 } PHY_DataInd_t;
 
+#if SNIFFER
+	// Global flag to indicate frame received to sniffer app.
+	uint8_t sniffFlag;
+
+	enum
+	{
+	  PHY_IB_NONE      = 0,
+	  PHY_IB_ADDR      = (1 << 0),
+	  PHY_IB_PANID     = (1 << 1),
+	  PHY_IB_CHANNEL   = (1 << 2),
+	  PHY_IB_RX_STATE  = (1 << 3),
+	  PHY_IB_TX_POWER  = (1 << 4),
+	  PHY_IB_SLEEP     = (1 << 5),
+	  PHY_IB_WAKEUP    = (1 << 6),
+	};
+
+	typedef struct PhyIb_t
+	{
+	  uint8_t     requests;
+
+	  uint16_t    addr;
+	  uint16_t    panId;
+	  uint8_t     channel;
+	  bool        rx;
+	  uint8_t     txPower;
+	} PhyIb_t;
+#endif
+
 /*****************************************************************************
 *****************************************************************************/
 extern volatile PHY_State_t phyState;
@@ -190,9 +221,12 @@ extern volatile int8_t      phyRxRssi;
 
 /*****************************************************************************
 *****************************************************************************/
-#ifdef PER_APP
+// ETG
+#if SNIFFER
 	void phyTrxSetState(uint8_t state);
+	void sendSnifferResults(void);
 #endif
+
 void PHY_Init(void);
 void PHY_SetRxState(bool rx);
 void PHY_SetTxPower(uint8_t txPower);
@@ -234,13 +268,26 @@ INLINE uint8_t phyReadRegisterInline(uint8_t reg)
 
 /*****************************************************************************
 *****************************************************************************/
+
 INLINE void phyInterruptHandler(void)
 {
   uint8_t irq;
 
+ // DEBUG
+  sniffFlag = phyReadRegisterInline(TRX_STATE_REG);
+
   irq = phyReadRegisterInline(IRQ_STATUS_REG);
   if (0 == (irq & TRX_END_MASK))
     return;
+
+  sniffFlag = phyReadRegisterInline(TRX_STATE_REG);
+
+#if SNIFFER
+//    phyWriteRegisterInline(TRX_STATE_REG, TRX_CMD_RX_AACK_ON);
+//    phyRxRssi = (int8_t)phyReadRegisterInline(PHY_ED_LEVEL_REG);
+    sniffFlag = 1;
+    return;
+#endif
 
   if (PHY_STATE_TX_WAIT_END == phyState)
   {
@@ -256,6 +303,8 @@ INLINE void phyInterruptHandler(void)
     phyRxRssi = (int8_t)phyReadRegisterInline(PHY_ED_LEVEL_REG);
     phyState = PHY_STATE_RX_IND;
     SYS_TaskSetInline(PHY_TASK);
+
+
   }
 }
 
