@@ -420,6 +420,7 @@ void sendSnifferResults(void)
     //ETG  A simple indicator that frames are being received...
     ledToggle();
 
+    ATOMIC_SECTION_ENTER
     phyRxRssi = (int8_t)phyReadRegisterInline(PHY_ED_LEVEL_REG);
 
     HAL_PhySpiSelect();
@@ -428,6 +429,7 @@ void sendSnifferResults(void)
     for (uint8_t i = 0; i < size + 1/*lqi*/; i++)
       phyRxBuffer[i] = HAL_PhySpiWriteByte(0);
     HAL_PhySpiDeselect();
+    ATOMIC_SECTION_LEAVE
 
     sniff_frame[0] = APP_COMMAND_START_SNIFFER_RESP;
     lqiOffset = size;

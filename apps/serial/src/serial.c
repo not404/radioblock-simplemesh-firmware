@@ -557,7 +557,9 @@ int main(void)
 		  z = 0;
 	  }
 #endif
-    SYS_TaskRun();
+	if(!sniffFlag)
+		SYS_TaskRun();
+
   }
 
   return 0;
