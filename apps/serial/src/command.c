@@ -562,8 +562,6 @@ extern AppIb_t appIb;
 */
 void appCommandStartSniffer(void)
 {
-	uint16_t addr = 0;
-
 	// Set the flags to handle the interrupts and main loop logic.
 	sniffFlag = 1;
 	frameFlag = 0;
