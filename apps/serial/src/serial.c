@@ -422,27 +422,6 @@ static void appTaskHandler(void)
 
       if (APP_STATUS_SUCESS == status)
       {
-#if SNIFFER
-    	if (APP_COMMAND_START_SNIFFER_REQ == appUartCmdBuffer[0])
-    	{
-    		// Reset the radio into sniffer mode.
-    		appCommandStartSniffer();
-
-
-    		//appState = APP_STATE_SNIFFER_MODE;
-    		//appUartState = APP_UART_STATE_STOP;
-
-    	}
-
-    	if (APP_COMMAND_STOP_SNIFFER_REQ == appUartCmdBuffer[0])
-    	{
-    		NWK_Init();
-    		NWK_PortOpen(APP_PORT, appTaskHandler, appDataInd);
-    	}
-
-		appState = APP_STATE_WAIT_COMMAND;
-		appUartState = APP_UART_STATE_IDLE;
-#endif
         if (APP_COMMAND_RESET_REQ == appUartCmdBuffer[0])
         {
           appState = APP_STATE_RESET_REQ;
@@ -547,8 +526,7 @@ int main(void)
 
   while (1)
   {
-#if SNIFFER
-	  if(sniffFlag)
+	  if(frameFlag)
 		  sendSnifferResults(); // Process a received frame.
 	  if(z) // Set in JTAG debug to dump radio registers.
 	  {
@@ -556,10 +534,9 @@ int main(void)
 			  radioReg[i] = phyReadRegisterInline(i);
 		  z = 0;
 	  }
-#endif
-	if(!sniffFlag)
-		SYS_TaskRun();
 
+	if(!frameFlag)
+		SYS_TaskRun();
   }
 
   return 0;
