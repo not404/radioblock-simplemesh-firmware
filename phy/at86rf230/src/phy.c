@@ -353,6 +353,31 @@ void phyTaskHandler(void)
         phyRxBuffer[i] = HAL_PhySpiWriteByte(0);
       HAL_PhySpiDeselect();
 
+#if 0
+      /* The "size" variable is the length of the raw frame.
+      	 The raw frame is in the phyRxBuffer. It is composed of
+         these fields:
+       	 	 1. uint16_t	-	MAC FCF
+       	 	 2. uint8_t		-	MAC SEQ Number
+       	 	 3. uint16_t	-	MAC Dst. PAN ID
+       	 	 4. uint16_t	-	MAC Dst. Addr.
+       	 	 5. uint16_t	-	MAC Src. Addr.
+       	 	 6. uint8_t		-	NWK FCF
+       	 	 7. uint8_t		-	NWK SEQ Number
+       	 	 8. uint16_t	-	NWK Src. Addr.
+       	 	 9. uint16_t	-	NWK Dst. Addr.
+       	 	 10. uint8_t[]	-	Payload
+       	 	 11. uint8_t	-	lqi
+       	 	 13. uint8_t	-	rssi
+       */
+
+      memcpy(sniff_frame, phyRxBuffer, size-2);
+      sniff_frame[size] = phyRxBuffer[size];
+      sniff_frame[size+1] = phyRxRssi + RSSI_BASE_VAL;
+      appUartSendCommand(sniff_frame, size);
+
+      phyState = PHY_STATE_IDLE;
+#else
       ind.data = phyRxBuffer;
       ind.size = size - 2/*crc*/;
       ind.lqi  = phyRxBuffer[size];
@@ -362,6 +387,7 @@ void phyTaskHandler(void)
       while (TRX_CMD_PLL_ON != (phyReadRegister(TRX_STATUS_REG) & TRX_STATUS_TRX_STATUS_MASK));
       phyState = PHY_STATE_IDLE;
       SYS_TaskSet(PHY_TASK);
+#endif
     } break;
 
     default:
@@ -394,23 +420,23 @@ void sendSnifferResults(void)
     //ETG  A simple indicator that frames are being received...
     ledToggle();
 
-    phyRxRssi = (int8_t)phyReadRegisterInline(PHY_RSSI_REG);
+    ATOMIC_SECTION_ENTER
+    phyRxRssi = (int8_t)phyReadRegisterInline(PHY_ED_LEVEL_REG);
 
-//    ATOMIC_SECTION_ENTER
     HAL_PhySpiSelect();
     HAL_PhySpiWriteByte(RF_CMD_FRAME_R);
     size = HAL_PhySpiWriteByte(0);
     for (uint8_t i = 0; i < size + 1/*lqi*/; i++)
       phyRxBuffer[i] = HAL_PhySpiWriteByte(0);
     HAL_PhySpiDeselect();
-//    ATOMIC_SECTION_LEAVE
+    ATOMIC_SECTION_LEAVE
 
     sniff_frame[0] = APP_COMMAND_START_SNIFFER_RESP;
     lqiOffset = size;
     size -= 2; // Dump the FCS bytes
     memcpy(&sniff_frame[1], phyRxBuffer, size);
     sniff_frame[size] = phyRxBuffer[lqiOffset]; // Copy frame including LQI
-    sniff_frame[size+1] = phyRxRssi; 			// Append RSSI, convert to dB in Commander.
+    sniff_frame[size+1] = phyRxRssi + RSSI_BASE_VAL; // Append RSSI in dB.
     appUartSendCommand(sniff_frame, size+2);
 }
 #endif
