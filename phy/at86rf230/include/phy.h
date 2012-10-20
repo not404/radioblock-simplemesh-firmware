@@ -188,6 +188,7 @@ typedef struct PHY_DataInd_t
 #if SNIFFER
 	// Global flag to indicate frame received to sniffer app.
 	uint8_t sniffFlag;
+	uint8_t frameFlag;
 
 	enum
 	{
@@ -273,21 +274,9 @@ INLINE void phyInterruptHandler(void)
 {
   uint8_t irq;
 
- // DEBUG
-  sniffFlag = phyReadRegisterInline(TRX_STATE_REG);
-
   irq = phyReadRegisterInline(IRQ_STATUS_REG);
   if (0 == (irq & TRX_END_MASK))
     return;
-
-  sniffFlag = phyReadRegisterInline(TRX_STATE_REG);
-
-#if SNIFFER
-//    phyWriteRegisterInline(TRX_STATE_REG, TRX_CMD_RX_AACK_ON);
-//    phyRxRssi = (int8_t)phyReadRegisterInline(PHY_ED_LEVEL_REG);
-    sniffFlag = 1;
-    return;
-#endif
 
   if (PHY_STATE_TX_WAIT_END == phyState)
   {
@@ -303,8 +292,6 @@ INLINE void phyInterruptHandler(void)
     phyRxRssi = (int8_t)phyReadRegisterInline(PHY_ED_LEVEL_REG);
     phyState = PHY_STATE_RX_IND;
     SYS_TaskSetInline(PHY_TASK);
-
-
   }
 }
 

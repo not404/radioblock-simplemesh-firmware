@@ -394,6 +394,8 @@ static void appInit(void)
   appState = APP_STATE_WAIT_COMMAND;
   appSetDefaults = false;
 
+  // Turn off sniffer flag.
+  frameFlag = 0;
 }
 
 /*****************************************************************************
@@ -422,12 +424,13 @@ static void appTaskHandler(void)
 
       if (APP_STATUS_SUCESS == status)
       {
-#if SNIFFER
+#if 0
     	if (APP_COMMAND_START_SNIFFER_REQ == appUartCmdBuffer[0])
     	{
     		// Reset the radio into sniffer mode.
     		appCommandStartSniffer();
-
+    		sniffFlag = 1;
+    		frameFlag = 0;
 
     		//appState = APP_STATE_SNIFFER_MODE;
     		//appUartState = APP_UART_STATE_STOP;
@@ -438,6 +441,8 @@ static void appTaskHandler(void)
     	{
     		NWK_Init();
     		NWK_PortOpen(APP_PORT, appTaskHandler, appDataInd);
+    		sniffFlag = 0;
+    		frameFlag = 0;
     	}
 
 		appState = APP_STATE_WAIT_COMMAND;
@@ -537,27 +542,30 @@ void NWK_WakeupConf(void)
 int main(void)
 {
 #if SNIFFER
-	sniffFlag = 0;
-
 	uint8_t radioReg[48];
 	uint8_t z = 0;
 #endif
+
   NWK_Init();
   NWK_PortOpen(APP_PORT, appTaskHandler, appDataInd);
 
   while (1)
   {
-#if SNIFFER
-	  if(sniffFlag)
-		  sendSnifferResults(); // Process a received frame.
+	  if(frameFlag)
+	  {
+		  sendSnifferResults(); // Process a sniffer frame.
+		  frameFlag = 0;
+	  }
+
 	  if(z) // Set in JTAG debug to dump radio registers.
 	  {
 		  for(uint8_t i = 0; i<48; i++)
 			  radioReg[i] = phyReadRegisterInline(i);
 		  z = 0;
 	  }
-#endif
-    SYS_TaskRun();
+
+	if(!frameFlag)
+		SYS_TaskRun();
   }
 
   return 0;

@@ -554,15 +554,6 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
 /*****************************************************************************
 *****************************************************************************/
 #if SNIFFER
-
-void writeRegister(uint8_t reg, uint8_t value)
-{
-  HAL_PhySpiSelect();
-  HAL_PhySpiWriteByteInline(RF_CMD_REG_W | reg);
-  HAL_PhySpiWriteByteInline(value);
-  HAL_PhySpiDeselect();
-}
-
 extern AppIb_t appIb;
 #include "nwkPrivate.h"
 
@@ -573,67 +564,96 @@ void appCommandStartSniffer(void)
 {
 	uint16_t addr = 0;
 
+	// Set the flags to handle the interrupts and main loop logic.
+	sniffFlag = 1;
+	frameFlag = 0;
+
 	// Reset the radio.
 	HAL_PhyReset();
 
+    // Configure radio for promiscuous mode.
+
+	phyWriteRegisterInline(SHORT_ADDR_0_REG, 0);
+	phyWriteRegisterInline(SHORT_ADDR_1_REG, 0);
+
+	phyWriteRegisterInline(PAN_ID_1_REG, 0);
+	phyWriteRegisterInline(PAN_ID_0_REG, 0);
+
+	phyWriteRegisterInline(IEEE_ADDR_0_REG, 0);
+	phyWriteRegisterInline(IEEE_ADDR_1_REG, 0);
+	phyWriteRegisterInline(IEEE_ADDR_2_REG, 0);
+	phyWriteRegisterInline(IEEE_ADDR_3_REG, 0);
+	phyWriteRegisterInline(IEEE_ADDR_4_REG, 0);
+	phyWriteRegisterInline(IEEE_ADDR_5_REG, 0);
+	phyWriteRegisterInline(IEEE_ADDR_6_REG, 0);
+	phyWriteRegisterInline(IEEE_ADDR_7_REG, 0);
+
+	phyWriteRegisterInline(TRX_CTRL_2_REG, 0x80); // Set safe mode
+
+    // Disable ACKs in promiscuous mode, set to receive all 802.15.4 frames
+	phyWriteRegisterInline(CSMA_SEED_1_REG, 0xD0);
+
+    // Turn on the promiscuous bit. Sniffer Mode.
+	phyWriteRegisterInline(XAH_CTRL_1_REG, 0x02);
+
 	// Reset some of the phyIb.
 	phyIb.requests = PHY_IB_NONE;
-
-	addr = phyReadRegisterInline(SHORT_ADDR_1_REG);
-	addr <<= 8;
-	addr |= phyReadRegisterInline(SHORT_ADDR_0_REG);
-
-	// Set both the information bases.
-	phyIb.addr = addr;
-	appIb.addr = addr;
-	nwkIb.addr = addr;
-
-
-	addr = phyReadRegisterInline(PAN_ID_0_REG);
-	addr <<= 8;
-	addr |= phyReadRegisterInline(PAN_ID_0_REG);
-
-	// Set both the information bases.
-	phyIb.panId = addr;
-	appIb.panId = addr;
-	nwkIb.panId = addr;
-
 	phyIb.rx = true;
 	phyIb.txPower = 0;
 	phyState = PHY_STATE_IDLE;
 
-    // Turn on the promiscuous bit. Sniffer Mode.
-	phyWriteRegisterInline(XAH_CTRL_1_REG, 0x02);
-	// Reserved frame mode.
-//	phyWriteRegisterInline(XAH_CTRL_1_REG, 0x12);
+	// Set the information bases.
+	phyIb.addr = 0;
+	appIb.addr = 0;
+	nwkIb.addr = 0;
 
-//	phyWriteRegisterInline(XAH_CTRL_0_REG, 0x00);
-
-//	phyWriteRegisterInline(TRX_CTRL_2_REG, 0x00);
-
-    // Disable ACKs in promiscuous mode.
-	phyWriteRegisterInline(CSMA_SEED_1_REG, 0x10);
+	// Set the information bases.
+	phyIb.panId = 0;
+	appIb.panId = 0;
+	nwkIb.panId = 0;
 
     // Received frames are indicated by both RX_START & TRX End bits.
-	phyWriteRegisterInline(IRQ_MASK_REG, (RX_START_MASK | TRX_END_MASK));
+	//phyWriteRegisterInline(IRQ_MASK_REG, (RX_START_MASK | TRX_END_MASK));
+	phyWriteRegisterInline(IRQ_MASK_REG, TRX_END_MASK);
 
     //Force transition to TRX_OFF.
-	//phyTrxSetState(TRX_CMD_FORCE_TRX_OFF);
 	phyWriteRegisterInline(TRX_STATE_REG, TRX_CMD_FORCE_TRX_OFF);
 
-    // Put radio into PLL_ON before transition to RX_AACK mode
-    phyTrxSetState(TRX_CMD_PLL_ON);
-
-    // Put radio into RX_AACK mode
-    phyTrxSetState(TRX_CMD_RX_AACK_ON);
 	// Put the radio into Sniffer mode.
+	phyTrxSetState(TRX_CMD_RX_ON);
+
+	// DEBUG
+	uint8_t radioReg[64];
+	for(uint8_t i = 0; i<48; i++)
+		radioReg[i] = phyReadRegisterInline(i);
 }
 
 void appCommandStopSniffer(void)
 {
-	// Reset the radio.
+	// Reset the radio & reinitialize the radio.
+/*
+	HAL_Init();
+	SYS_MemInit();
+	PHY_Init();
+
+	nwkIb.addr = 0;
+	nwkIb.panId = 0;
+	nwkIb.nwkSeqNum = 0;
+	nwkIb.macSeqNum = 0;
+
+	for (uint8_t i = 0; i < NWK_MAX_PORTS_AMOUNT; i++)
+		nwkIb.ind[i] = NULL;
+
+	nwkTxInit();
+	nwkRxInit();
+	nwkRouteInit();
+	nwkDataReqInit();
 	
-	// Reinitialize the radio.
+	NWK_PortOpen(0, NULL, nwkCommandDataInd);
+*/
+	// Turn off sniffer flag.
+	sniffFlag = 0;
+	frameFlag = 0;
 }
 #endif // SNIFFER
 

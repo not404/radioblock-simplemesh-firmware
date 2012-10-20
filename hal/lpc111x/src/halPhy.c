@@ -112,6 +112,17 @@ void HAL_PhyInit(void)
 void HAL_PIOINT1_IrqHandler(void)
 {
   LPC_GPIO1->IC = (1 << 2);
-  phyInterruptHandler();
+
+  // To speed things up in sniffer mode, set the flag here to get it processed
+  // in the main loop asap.
+
+  if(!sniffFlag)
+	  phyInterruptHandler();
+  else
+  {
+	  uint8_t irq;
+	  irq = phyReadRegisterInline(IRQ_STATUS_REG);
+	  frameFlag = 1;
+  }
 }
 
