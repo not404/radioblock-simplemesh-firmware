@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
  * Eric Gnoske,
- * Colin O'Flynn
+ * Colin O'Flynn,
  * Blake Leverett,
  * Rob Fries,
  * Colorado Micro Devices Inc..
@@ -102,12 +102,12 @@ typedef enum AppCommandId_t
 
   APP_COMMAND_SET_LED_STATE_REQ     = 0x80,
   
-#if SNIFFER
+// ETG #if SNIFFER
 	APP_COMMAND_START_SNIFFER_REQ   = 0x90,
 	APP_COMMAND_START_SNIFFER_RESP  = 0x91,
 	APP_COMMAND_STOP_SNIFFER_REQ	= 0x92,
 	APP_COMMAND_STOP_SNIFFER_RESP	= 0x93,
-#endif
+	// ETG #endif
 } AppCommandId_t;
 
 enum
@@ -338,7 +338,7 @@ typedef struct PACK
   uint8_t      ledState;
 } AppCommandSetLedStateReq_t;
 
-#if SNIFFER
+#if ETG
 	typedef struct PACK
 	{
 	  uint8_t      id;

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
  * Eric Gnoske,
- * Colin O'Flynn
+ * Colin O'Flynn,
  * Blake Leverett,
  * Rob Fries,
  * Colorado Micro Devices Inc..
@@ -185,48 +185,47 @@ typedef struct PHY_DataInd_t
   int8_t     rssi;
 } PHY_DataInd_t;
 
-#if SNIFFER
-	// Global flag to indicate frame received to sniffer app.
-	uint8_t sniffFlag;
-	uint8_t frameFlag;
 
-	enum
-	{
-	  PHY_IB_NONE      = 0,
-	  PHY_IB_ADDR      = (1 << 0),
-	  PHY_IB_PANID     = (1 << 1),
-	  PHY_IB_CHANNEL   = (1 << 2),
-	  PHY_IB_RX_STATE  = (1 << 3),
-	  PHY_IB_TX_POWER  = (1 << 4),
-	  PHY_IB_SLEEP     = (1 << 5),
-	  PHY_IB_WAKEUP    = (1 << 6),
-	};
+// Global flag to indicate frame received to sniffer app.
+uint8_t sniffFlag;
+uint8_t frameFlag;
 
-	typedef struct PhyIb_t
-	{
-	  uint8_t     requests;
+enum
+{
+  PHY_IB_NONE      = 0,
+  PHY_IB_ADDR      = (1 << 0),
+  PHY_IB_PANID     = (1 << 1),
+  PHY_IB_CHANNEL   = (1 << 2),
+  PHY_IB_RX_STATE  = (1 << 3),
+  PHY_IB_TX_POWER  = (1 << 4),
+  PHY_IB_SLEEP     = (1 << 5),
+  PHY_IB_WAKEUP    = (1 << 6),
+};
 
-	  uint16_t    addr;
-	  uint16_t    panId;
-	  uint8_t     channel;
-	  bool        rx;
-	  uint8_t     txPower;
-	} PhyIb_t;
-#endif
+typedef struct PhyIb_t
+{
+  uint8_t     requests;
+
+  uint16_t    addr;
+  uint16_t    panId;
+  uint8_t     channel;
+  bool        rx;
+  uint8_t     txPower;
+} PhyIb_t;
 
 /*****************************************************************************
 *****************************************************************************/
+PhyIb_t       phyIb;
 extern volatile PHY_State_t phyState;
 extern volatile uint8_t     phyTxStatus;
 extern volatile int8_t      phyRxRssi;
 
 /*****************************************************************************
 *****************************************************************************/
-// ETG
-#if SNIFFER
-	void phyTrxSetState(uint8_t state);
-	void sendSnifferResults(void);
-#endif
+// For sniffer app.
+void phyTrxSetState(uint8_t state);
+void sendSnifferResults(void);
+
 
 void PHY_Init(void);
 void PHY_SetRxState(bool rx);

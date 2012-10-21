@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
  * Eric Gnoske,
- * Colin O'Flynn
+ * Colin O'Flynn,
  * Blake Leverett,
  * Rob Fries,
  * Colorado Micro Devices Inc..
@@ -98,10 +98,10 @@ typedef struct PACK AppMessage_t
 static void appUartAck(AppStatus_t status);
 static void appUartInit(void);
 
-#if SNIFFER
+// ETG #if SNIFFER
 	extern void appCommandStartSniffer(void);
 	extern void appCommandStopSniffer(void);
-#endif
+// ETG #endif
 
 /*****************************************************************************
 *****************************************************************************/
@@ -114,15 +114,15 @@ static HAL_Uart_t appUart;
 static uint8_t appUartTxBuffer[APP_UART_TX_BUFFER_SIZE];
 static uint8_t appUartRxBuffer[APP_UART_RX_BUFFER_SIZE];
 
-#if SNIFFER
-	AppUartState_t appUartState = APP_UART_STATE_IDLE;
-	uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
-	static uint8_t appUartCmdSize;
-#else
+// ETG #if SNIFFER
+// ETG	AppUartState_t appUartState = APP_UART_STATE_IDLE;
+// ETG 	uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
+// ETG 	static uint8_t appUartCmdSize;
+// ETG #else
 	static AppUartState_t appUartState = APP_UART_STATE_IDLE;
 	static uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
 	static uint8_t appUartCmdSize;
-#endif
+// ETG #endif
 static SYS_Timer_t appUartTimer;
 
 
@@ -515,9 +515,7 @@ void NWK_WakeupConf(void)
 *****************************************************************************/
 int main(void)
 {
-#if SNIFFER
-	sniffFlag = 0;
-
+#if DEBUG
 	uint8_t radioReg[48];
 	uint8_t z = 0;
 #endif
@@ -527,14 +525,19 @@ int main(void)
   while (1)
   {
 	  if(frameFlag)
+	  {
 		  sendSnifferResults(); // Process a received frame.
+		  frameFlag = 0;
+	  }
+
+#if DEBUG
 	  if(z) // Set in JTAG debug to dump radio registers.
 	  {
 		  for(uint8_t i = 0; i<48; i++)
 			  radioReg[i] = phyReadRegisterInline(i);
 		  z = 0;
 	  }
-
+#endif
 	if(!frameFlag)
 		SYS_TaskRun();
   }

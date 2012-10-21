@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
  * Eric Gnoske,
- * Colin O'Flynn
+ * Colin O'Flynn,
  * Blake Leverett,
  * Rob Fries,
  * Colorado Micro Devices Inc..
@@ -120,9 +120,9 @@ void HAL_PIOINT1_IrqHandler(void)
 	  phyInterruptHandler();
   else
   {
-	  uint8_t irq;
-	  irq = phyReadRegisterInline(IRQ_STATUS_REG);
-	  frameFlag = 1;
+	  // If we are sniffing, clear IRQ flag and set the flag to process the frame.
+	  if(phyReadRegisterInline(IRQ_STATUS_REG) == TRX_END_MASK)
+		  frameFlag = 1;
   }
 }
 

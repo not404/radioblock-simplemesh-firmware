@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
  * Eric Gnoske,
- * Colin O'Flynn
+ * Colin O'Flynn,
  * Blake Leverett,
  * Rob Fries,
  * Colorado Micro Devices Inc..
@@ -40,38 +40,13 @@
 #include "phy.h"
 #include "sysTaskManager.h"
 
-//ETG DEBUG
+// To support LED and sniffer app
 #include "led.h"
-#if SNIFFER
-	#include "serial.h"
-	#include <string.h>
-#endif
+#include "serial.h"
+#include <string.h>
 /*****************************************************************************
 *****************************************************************************/
-#if !SNIFFER
-enum
-{
-  PHY_IB_NONE      = 0,
-  PHY_IB_ADDR      = (1 << 0),
-  PHY_IB_PANID     = (1 << 1),
-  PHY_IB_CHANNEL   = (1 << 2),
-  PHY_IB_RX_STATE  = (1 << 3),
-  PHY_IB_TX_POWER  = (1 << 4),
-  PHY_IB_SLEEP     = (1 << 5),
-  PHY_IB_WAKEUP    = (1 << 6),
-};
 
-typedef struct PhyIb_t
-{
-  uint8_t     requests;
-
-  uint16_t    addr;
-  uint16_t    panId;
-  uint8_t     channel;
-  bool        rx;
-  uint8_t     txPower;
-} PhyIb_t;
-#endif
 
 /*****************************************************************************
 *****************************************************************************/
@@ -83,17 +58,10 @@ typedef struct PhyIb_t
 *****************************************************************************/
 static void phyWriteRegister(uint8_t reg, uint8_t value);
 static uint8_t phyReadRegister(uint8_t reg);
-#if !SNIFFER
-	static void phyTrxSetState(uint8_t state);
-#endif
 
 /*****************************************************************************
 *****************************************************************************/
-#if SNIFFER
-	PhyIb_t       phyIb;
-#else
-	static PhyIb_t       phyIb;
-#endif
+
 volatile PHY_State_t phyState = PHY_STATE_INITIAL;
 volatile uint8_t     phyTxStatus;
 volatile int8_t      phyRxRssi;
@@ -296,19 +264,16 @@ static uint8_t phyReadRegister(uint8_t reg)
 
 /*****************************************************************************
 *****************************************************************************/
-#if SNIFFER
-	void phyTrxSetState(uint8_t state)
-#else
-	static void phyTrxSetState(uint8_t state)
-#endif
+// Made non-static to support sniffer app...
+void phyTrxSetState(uint8_t state)
 {
   phyWriteRegister(TRX_STATE_REG, TRX_CMD_FORCE_TRX_OFF);
   phyWriteRegister(TRX_STATE_REG, state);
   while (state != (phyReadRegister(TRX_STATUS_REG) & TRX_STATUS_TRX_STATUS_MASK));
 }
-#if SNIFFER
-		uint8_t	sniff_frame[132];
-#endif
+// ETG #if SNIFFER
+uint8_t	sniff_frame[132];
+// ETG #endif
 /*****************************************************************************
 *****************************************************************************/
 void phyTaskHandler(void)
@@ -368,7 +333,7 @@ void phyTaskHandler(void)
   }
 }
 
-#if SNIFFER
+// ETG #if SNIFFER
 void sendSnifferResults(void)
 {
     /* The "size" variable is the length of the raw frame.
@@ -394,14 +359,15 @@ void sendSnifferResults(void)
     ledToggle();
 
     ATOMIC_SECTION_ENTER
-    phyRxRssi = (int8_t)phyReadRegisterInline(PHY_ED_LEVEL_REG);
 
+    phyRxRssi = (int8_t)phyReadRegisterInline(PHY_ED_LEVEL_REG);
     HAL_PhySpiSelect();
     HAL_PhySpiWriteByte(RF_CMD_FRAME_R);
     size = HAL_PhySpiWriteByte(0);
     for (uint8_t i = 0; i < size + 1/*lqi*/; i++)
       phyRxBuffer[i] = HAL_PhySpiWriteByte(0);
     HAL_PhySpiDeselect();
+
     ATOMIC_SECTION_LEAVE
 
     sniff_frame[0] = APP_COMMAND_START_SNIFFER_RESP;
@@ -412,7 +378,7 @@ void sendSnifferResults(void)
     sniff_frame[size+1] = phyRxRssi + RSSI_BASE_VAL; // Append RSSI in dB.
     appUartSendCommand(sniff_frame, size+2);
 }
-#endif
+// ETG #endif
 
 #endif // PHY_AT86RF230
 

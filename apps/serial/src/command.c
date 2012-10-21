@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
  * Eric Gnoske,
- * Colin O'Flynn
+ * Colin O'Flynn,
  * Blake Leverett,
  * Rob Fries,
  * Colorado Micro Devices Inc..
@@ -46,9 +46,10 @@
 
 /*****************************************************************************
 *****************************************************************************/
-#if SNIFFER
-	extern PhyIb_t phyIb;
-#endif
+// For sniffer app
+#include "nwkPrivate.h"
+extern PhyIb_t phyIb;
+
 
 /*****************************************************************************
 *****************************************************************************/
@@ -79,10 +80,9 @@ AppStatus_t appCommandSetAckStateReqHandler(uint8_t *buf, uint8_t size);
 AppStatus_t appCommandGetAckStateReqHandler(uint8_t *buf, uint8_t size);
 AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size);
 
-#if SNIFFER
+// ETG
 	void appCommandStartSniffer(void);
 	void appCommandStopSniffer(void);
-#endif
 
 static void appDataConf(NWK_DataReq_t *req);
 
@@ -130,10 +130,9 @@ static AppCommandRecord_t records[] =
   { APP_COMMAND_SET_ACK_STATE_REQ,    sizeof(AppCommandSetAckStateReq_t),     appCommandSetAckStateReqHandler },
   { APP_COMMAND_GET_ACK_STATE_REQ,    sizeof(AppCommandGetAckStateReq_t),     appCommandGetAckStateReqHandler },
   { APP_COMMAND_SET_LED_STATE_REQ,    sizeof(AppCommandSetLedStateReq_t),     appCommandSetLedStateReqHandler },
-#if SNIFFER
-	{ APP_COMMAND_START_SNIFFER_REQ,   	1,       (void *) appCommandStartSniffer },
-	{ APP_COMMAND_STOP_SNIFFER_REQ,    	1,        (void *) appCommandStopSniffer },
-#endif
+// Sniffer app
+  { APP_COMMAND_START_SNIFFER_REQ,   	1,       (void *) appCommandStartSniffer },
+  { APP_COMMAND_STOP_SNIFFER_REQ,    	1,        (void *) appCommandStopSniffer },
 };
 
 static uint32_t vBaudrates[32] =
@@ -553,16 +552,16 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
 
 /*****************************************************************************
 *****************************************************************************/
-#if SNIFFER
-extern AppIb_t appIb;
-#include "nwkPrivate.h"
+// ETG #if SNIFFER
+// ETG extern AppIb_t appIb;
+//#include "nwkPrivate.h"
 
 /*
  * Sniffer implementation.
 */
 void appCommandStartSniffer(void)
 {
-	// Set the flags to handle the interrupts and main loop logic.
+	// Init the flags to handle the interrupts and main loop logic.
 	sniffFlag = 1;
 	frameFlag = 0;
 
@@ -610,6 +609,9 @@ void appCommandStartSniffer(void)
 	appIb.panId = 0;
 	nwkIb.panId = 0;
 
+	phyIb.channel = 11;
+	appIb.channel = 11;
+
     // Received frames are indicated by both RX_START & TRX End bits.
 	//phyWriteRegisterInline(IRQ_MASK_REG, (RX_START_MASK | TRX_END_MASK));
 	phyWriteRegisterInline(IRQ_MASK_REG, TRX_END_MASK);
@@ -653,7 +655,7 @@ void appCommandStopSniffer(void)
 	sniffFlag = 0;
 	frameFlag = 0;
 }
-#endif // SNIFFER
+// ETG #endif // SNIFFER
 
 
 /*****************************************************************************
