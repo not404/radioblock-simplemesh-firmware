@@ -40,13 +40,10 @@
 #include "phy.h"
 #include "sysTaskManager.h"
 
-// To support LED and sniffer app
-#include "led.h"
-#include "serial.h"
-#include <string.h>
 /*****************************************************************************
 *****************************************************************************/
-
+// To support LED app
+#include "led.h"
 
 /*****************************************************************************
 *****************************************************************************/
@@ -58,6 +55,7 @@
 *****************************************************************************/
 static void phyWriteRegister(uint8_t reg, uint8_t value);
 static uint8_t phyReadRegister(uint8_t reg);
+static void phyTrxSetState(uint8_t state);
 
 /*****************************************************************************
 *****************************************************************************/
@@ -264,16 +262,13 @@ static uint8_t phyReadRegister(uint8_t reg)
 
 /*****************************************************************************
 *****************************************************************************/
-// Made non-static to support sniffer app...
-void phyTrxSetState(uint8_t state)
+static void phyTrxSetState(uint8_t state)
 {
   phyWriteRegister(TRX_STATE_REG, TRX_CMD_FORCE_TRX_OFF);
   phyWriteRegister(TRX_STATE_REG, state);
   while (state != (phyReadRegister(TRX_STATUS_REG) & TRX_STATUS_TRX_STATUS_MASK));
 }
-// ETG #if SNIFFER
-uint8_t	sniff_frame[132];
-// ETG #endif
+
 /*****************************************************************************
 *****************************************************************************/
 void phyTaskHandler(void)
@@ -332,53 +327,6 @@ void phyTaskHandler(void)
       break;
   }
 }
-
-// ETG #if SNIFFER
-void sendSnifferResults(void)
-{
-    /* The "size" variable is the length of the raw frame.
-    	 The raw frame is in the phyRxBuffer. It is composed of
-       these fields:
-     	 	 1. uint16_t	-	MAC FCF
-     	 	 2. uint8_t		-	MAC SEQ Number
-     	 	 3. uint16_t	-	MAC Dst. PAN ID
-     	 	 4. uint16_t	-	MAC Dst. Addr.
-     	 	 5. uint16_t	-	MAC Src. Addr.
-     	 	 6. uint8_t		-	NWK FCF
-     	 	 7. uint8_t		-	NWK SEQ Number
-     	 	 8. uint16_t	-	NWK Src. Addr.
-     	 	 9. uint16_t	-	NWK Dst. Addr.
-     	 	 10. uint8_t[]	-	Payload
-     	 	 11. uint8_t	-	lqi
-     	 	 13. uint8_t	-	rssi
-     */
-	uint8_t size;
-	uint8_t lqiOffset;
-
-    //ETG  A simple indicator that frames are being received...
-    ledToggle();
-
-    ATOMIC_SECTION_ENTER
-
-    phyRxRssi = (int8_t)phyReadRegisterInline(PHY_ED_LEVEL_REG);
-    HAL_PhySpiSelect();
-    HAL_PhySpiWriteByte(RF_CMD_FRAME_R);
-    size = HAL_PhySpiWriteByte(0);
-    for (uint8_t i = 0; i < size + 1/*lqi*/; i++)
-      phyRxBuffer[i] = HAL_PhySpiWriteByte(0);
-    HAL_PhySpiDeselect();
-
-    ATOMIC_SECTION_LEAVE
-
-    sniff_frame[0] = APP_COMMAND_START_SNIFFER_RESP;
-    lqiOffset = size;
-    size -= 2; // Dump the FCS bytes
-    memcpy(&sniff_frame[1], phyRxBuffer, size);
-    sniff_frame[size] = phyRxBuffer[lqiOffset]; // Copy frame including LQI
-    sniff_frame[size+1] = phyRxRssi + RSSI_BASE_VAL; // Append RSSI in dB.
-    appUartSendCommand(sniff_frame, size+2);
-}
-// ETG #endif
 
 #endif // PHY_AT86RF230
 

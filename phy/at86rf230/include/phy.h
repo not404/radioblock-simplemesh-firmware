@@ -185,11 +185,6 @@ typedef struct PHY_DataInd_t
   int8_t     rssi;
 } PHY_DataInd_t;
 
-
-// Global flag to indicate frame received to sniffer app.
-uint8_t sniffFlag;
-uint8_t frameFlag;
-
 enum
 {
   PHY_IB_NONE      = 0,
@@ -222,10 +217,6 @@ extern volatile int8_t      phyRxRssi;
 
 /*****************************************************************************
 *****************************************************************************/
-// For sniffer app.
-void phyTrxSetState(uint8_t state);
-void sendSnifferResults(void);
-
 
 void PHY_Init(void);
 void PHY_SetRxState(bool rx);

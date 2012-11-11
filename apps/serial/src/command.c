@@ -46,13 +46,6 @@
 
 /*****************************************************************************
 *****************************************************************************/
-// For sniffer app
-#include "nwkPrivate.h"
-extern PhyIb_t phyIb;
-
-
-/*****************************************************************************
-*****************************************************************************/
 #define AT_LEAST     0x80
 
 /*****************************************************************************
@@ -79,11 +72,6 @@ AppStatus_t appCommandSetSecurityKeyReqHandler(uint8_t *buf, uint8_t size);
 AppStatus_t appCommandSetAckStateReqHandler(uint8_t *buf, uint8_t size);
 AppStatus_t appCommandGetAckStateReqHandler(uint8_t *buf, uint8_t size);
 AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size);
-
-// ETG
-	void appCommandStartSniffer(void);
-	void appCommandStopSniffer(void);
-
 static void appDataConf(NWK_DataReq_t *req);
 
 /*****************************************************************************
@@ -130,9 +118,6 @@ static AppCommandRecord_t records[] =
   { APP_COMMAND_SET_ACK_STATE_REQ,    sizeof(AppCommandSetAckStateReq_t),     appCommandSetAckStateReqHandler },
   { APP_COMMAND_GET_ACK_STATE_REQ,    sizeof(AppCommandGetAckStateReq_t),     appCommandGetAckStateReqHandler },
   { APP_COMMAND_SET_LED_STATE_REQ,    sizeof(AppCommandSetLedStateReq_t),     appCommandSetLedStateReqHandler },
-// Sniffer app
-  { APP_COMMAND_START_SNIFFER_REQ,   	1,       (void *) appCommandStartSniffer },
-  { APP_COMMAND_STOP_SNIFFER_REQ,    	1,        (void *) appCommandStopSniffer },
 };
 
 static uint32_t vBaudrates[32] =
@@ -549,114 +534,6 @@ AppStatus_t appCommandSetLedStateReqHandler(uint8_t *buf, uint8_t size)
   (void)size;
   return APP_STATUS_SUCESS;
 }
-
-/*****************************************************************************
-*****************************************************************************/
-// ETG #if SNIFFER
-// ETG extern AppIb_t appIb;
-//#include "nwkPrivate.h"
-
-/*
- * Sniffer implementation.
-*/
-void appCommandStartSniffer(void)
-{
-	// Init the flags to handle the interrupts and main loop logic.
-	sniffFlag = 1;
-	frameFlag = 0;
-
-	// Reset the radio.
-	HAL_PhyReset();
-
-    // Configure radio for promiscuous mode.
-
-	phyWriteRegisterInline(SHORT_ADDR_0_REG, 0);
-	phyWriteRegisterInline(SHORT_ADDR_1_REG, 0);
-
-	phyWriteRegisterInline(PAN_ID_1_REG, 0);
-	phyWriteRegisterInline(PAN_ID_0_REG, 0);
-
-	phyWriteRegisterInline(IEEE_ADDR_0_REG, 0);
-	phyWriteRegisterInline(IEEE_ADDR_1_REG, 0);
-	phyWriteRegisterInline(IEEE_ADDR_2_REG, 0);
-	phyWriteRegisterInline(IEEE_ADDR_3_REG, 0);
-	phyWriteRegisterInline(IEEE_ADDR_4_REG, 0);
-	phyWriteRegisterInline(IEEE_ADDR_5_REG, 0);
-	phyWriteRegisterInline(IEEE_ADDR_6_REG, 0);
-	phyWriteRegisterInline(IEEE_ADDR_7_REG, 0);
-
-	phyWriteRegisterInline(TRX_CTRL_2_REG, 0x80); // Set safe mode
-
-    // Disable ACKs in promiscuous mode, set to receive all 802.15.4 frames
-	phyWriteRegisterInline(CSMA_SEED_1_REG, 0xD0);
-
-    // Turn on the promiscuous bit. Sniffer Mode.
-	phyWriteRegisterInline(XAH_CTRL_1_REG, 0x02);
-
-	// Reset some of the phyIb.
-	phyIb.requests = PHY_IB_NONE;
-	phyIb.rx = true;
-	phyIb.txPower = 0;
-	phyState = PHY_STATE_IDLE;
-
-	// Set the information bases.
-	phyIb.addr = 0;
-	appIb.addr = 0;
-	nwkIb.addr = 0;
-
-	// Set the information bases.
-	phyIb.panId = 0;
-	appIb.panId = 0;
-	nwkIb.panId = 0;
-
-	phyIb.channel = 11;
-	appIb.channel = 11;
-
-    // Received frames are indicated by both RX_START & TRX End bits.
-	//phyWriteRegisterInline(IRQ_MASK_REG, (RX_START_MASK | TRX_END_MASK));
-	phyWriteRegisterInline(IRQ_MASK_REG, TRX_END_MASK);
-
-    //Force transition to TRX_OFF.
-	phyWriteRegisterInline(TRX_STATE_REG, TRX_CMD_FORCE_TRX_OFF);
-
-	// Put the radio into Sniffer mode.
-	phyTrxSetState(TRX_CMD_RX_ON);
-
-	// DEBUG
-	uint8_t radioReg[64];
-	for(uint8_t i = 0; i<48; i++)
-		radioReg[i] = phyReadRegisterInline(i);
-}
-
-void appCommandStopSniffer(void)
-{
-	// Reset the radio & reinitialize the radio.
-/*
-	HAL_Init();
-	SYS_MemInit();
-	PHY_Init();
-
-	nwkIb.addr = 0;
-	nwkIb.panId = 0;
-	nwkIb.nwkSeqNum = 0;
-	nwkIb.macSeqNum = 0;
-
-	for (uint8_t i = 0; i < NWK_MAX_PORTS_AMOUNT; i++)
-		nwkIb.ind[i] = NULL;
-
-	nwkTxInit();
-	nwkRxInit();
-	nwkRouteInit();
-	nwkDataReqInit();
-	
-	NWK_PortOpen(0, NULL, nwkCommandDataInd);
-*/
-	// Turn off sniffer flag.
-	sniffFlag = 0;
-	frameFlag = 0;
-}
-// ETG #endif // SNIFFER
-
 
 /*****************************************************************************
 *****************************************************************************/

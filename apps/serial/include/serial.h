@@ -101,13 +101,6 @@ typedef enum AppCommandId_t
   APP_COMMAND_GET_ACK_STATE_RESP    = 0x37,
 
   APP_COMMAND_SET_LED_STATE_REQ     = 0x80,
-  
-// ETG #if SNIFFER
-	APP_COMMAND_START_SNIFFER_REQ   = 0x90,
-	APP_COMMAND_START_SNIFFER_RESP  = 0x91,
-	APP_COMMAND_STOP_SNIFFER_REQ	= 0x92,
-	APP_COMMAND_STOP_SNIFFER_RESP	= 0x93,
-	// ETG #endif
 } AppCommandId_t;
 
 enum
@@ -337,18 +330,6 @@ typedef struct PACK
   uint8_t      id;
   uint8_t      ledState;
 } AppCommandSetLedStateReq_t;
-
-#if ETG
-	typedef struct PACK
-	{
-	  uint8_t      id;
-	} AppCommandStartSniffer_t;
-
-	typedef struct PACK
-	{
-	  uint8_t      id;
-	} AppCommandStopSniffer_t;
-#endif
 
 
 /*****************************************************************************

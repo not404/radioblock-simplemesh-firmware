@@ -98,11 +98,6 @@ typedef struct PACK AppMessage_t
 static void appUartAck(AppStatus_t status);
 static void appUartInit(void);
 
-// ETG #if SNIFFER
-	extern void appCommandStartSniffer(void);
-	extern void appCommandStopSniffer(void);
-// ETG #endif
-
 /*****************************************************************************
 *****************************************************************************/
 uint32_t appSleepReqInterval;
@@ -113,16 +108,10 @@ static AppState_t appState = APP_STATE_INITIAL;
 static HAL_Uart_t appUart;
 static uint8_t appUartTxBuffer[APP_UART_TX_BUFFER_SIZE];
 static uint8_t appUartRxBuffer[APP_UART_RX_BUFFER_SIZE];
+static AppUartState_t appUartState = APP_UART_STATE_IDLE;
+static uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
+static uint8_t appUartCmdSize;
 
-// ETG #if SNIFFER
-// ETG	AppUartState_t appUartState = APP_UART_STATE_IDLE;
-// ETG 	uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
-// ETG 	static uint8_t appUartCmdSize;
-// ETG #else
-	static AppUartState_t appUartState = APP_UART_STATE_IDLE;
-	static uint8_t appUartCmdBuffer[APP_UART_CMD_BUFFER_SIZE];
-	static uint8_t appUartCmdSize;
-// ETG #endif
 static SYS_Timer_t appUartTimer;
 
 
@@ -330,7 +319,6 @@ static bool appDataInd(NWK_DataInd_t *ind)
   memcpy(cmd.payload, ind->data, ind->size);
 
 #ifdef LED_APP
-  // ETG
   // Interrogate the payload. If byte [0] = 'O', turn the LED off,
   // if byte [0] = 'F' turn the LED on.
   if (cmd.payload[0] == 'O')
@@ -515,31 +503,12 @@ void NWK_WakeupConf(void)
 *****************************************************************************/
 int main(void)
 {
-#if DEBUG
-	uint8_t radioReg[48];
-	uint8_t z = 0;
-#endif
   NWK_Init();
   NWK_PortOpen(APP_PORT, appTaskHandler, appDataInd);
 
   while (1)
   {
-	  if(frameFlag)
-	  {
-		  sendSnifferResults(); // Process a received frame.
-		  frameFlag = 0;
-	  }
-
-#if DEBUG
-	  if(z) // Set in JTAG debug to dump radio registers.
-	  {
-		  for(uint8_t i = 0; i<48; i++)
-			  radioReg[i] = phyReadRegisterInline(i);
-		  z = 0;
-	  }
-#endif
-	if(!frameFlag)
-		SYS_TaskRun();
+	SYS_TaskRun();
   }
 
   return 0;
