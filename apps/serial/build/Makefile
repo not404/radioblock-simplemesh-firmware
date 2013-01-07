@@ -1,5 +1,5 @@
 ##############################################################################
-APP_NAME = serial
+APP_NAME = simplemesh
 
 #HAL = ATMEGA128RFA1
 #HAL = ATMEGA328P
@@ -14,7 +14,7 @@ FREQ = 12_MHz
 
 #BOARD = RCB_MEGARF
 #BOARD = TRT_DISK
-BOARD = CMD_SQUARE
+BOARD = RADIOBLOCKS
 
 ##############################################################################
 .PHONY: all clean size
