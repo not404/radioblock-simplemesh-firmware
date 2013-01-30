@@ -55,7 +55,7 @@ else ifeq ($(HAL), LPC1114)
   MCU = cortex-m0
 
   CFLAGS += -mcpu=$(MCU) -mthumb
-  LDFLAGS += -mcpu=$(MCU) -mthumb
+  LDFLAGS += -mcpu=$(MCU) -mthumb  -O1
 
   INCLUDES += \
     -I$(STACK_PATH)/hal/lpc111x/include
@@ -97,7 +97,8 @@ DEFINES += \
   -DHAL_$(HAL) \
   -DPHY_$(PHY) \
   -DBOARD_$(BOARD) \
-  -DF_CPU=$(F_CPU)
+  -DF_CPU=$(F_CPU) \
+  -DLED_APP
 
 INCLUDES += \
   -I$(STACK_PATH)/phy/$(PHY_PATH)/include  \
