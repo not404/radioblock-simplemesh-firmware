@@ -3,6 +3,7 @@ CFLAGS += -W -Wall --std=gnu99 -Os
 CFLAGS += -ffunction-sections -fdata-sections -fshort-enums
 
 LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -Wl,-Map=$(APP_NAME).map
 
 ##############################################################################
 #
@@ -54,8 +55,8 @@ else ifeq ($(HAL), LPC1114)
 
   MCU = cortex-m0
 
-  CFLAGS += -mcpu=$(MCU) -mthumb
-  LDFLAGS += -mcpu=$(MCU) -mthumb  -O1
+  CFLAGS += -mcpu=$(MCU) -mthumb -O1
+  LDFLAGS += -mcpu=$(MCU) -mthumb
 
   INCLUDES += \
     -I$(STACK_PATH)/hal/lpc111x/include
