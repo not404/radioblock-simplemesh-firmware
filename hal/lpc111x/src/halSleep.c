@@ -44,9 +44,48 @@ void HAL_Sleep(uint32_t time)
   uint32_t sysAhbClkCtrl;
 
   sysAhbClkCtrl = LPC_SYSCON->SYSAHBCLKCTRL;
+
   LPC_SYSCON->SYSAHBCLKCTRL = (1 << 0/*SYS*/) | (1 << 1/*ROM*/) | (1 << 2/*RAM*/) |
       (1 << 3/*FLASHREQ*/) | (1 << 4/*FLASHARRAY*/) |  (1 << 6/*GPIO*/) |
       (1 << 9/*CT32B0*/) | (1 << 16/*IOCON*/);
+
+  // Configure PDSLEEPCFG
+  LPC_SYSCON->PDSLEEPCFG    = 0x000018BF;
+
+  // Set unused pins to OUTPUT, disable pull up/down
+  LPC_GPIO1->DIR |= (1<<8) | (1<<9) | (1<<11) | (1<<4) | (1<<10);
+  LPC_GPIO3->DIR |= (1<<4) | (1<<5);
+
+  LPC_IOCON->PIO1_8 = 0;
+  LPC_IOCON->PIO1_9 = 0;
+  LPC_IOCON->PIO1_11 = 0;
+  LPC_IOCON->PIO1_4 = 0;
+  LPC_IOCON->PIO1_10 = 0;
+  LPC_IOCON->PIO1_8 = 0;
+  LPC_IOCON->PIO3_4 = 0;
+  LPC_IOCON->PIO3_5 = 0;
+
+  LPC_GPIO0->DIR |= (1<<3) | (1<<7);
+  LPC_IOCON->PIO0_3 = 0;
+  LPC_IOCON->PIO0_7 = 0;
+
+  //Set RTS pin as output
+  LPC_GPIO1->DIR |= 1<<5;
+  LPC_IOCON->PIO1_5 = 0;
+  //Set pull-down on RXD pin (to not conflict with potential external pull-down)
+  LPC_IOCON->PIO1_7 = (LPC_IOCON->PIO1_7 & (~(3 << 3))) | (1 << 3);
+
+  //DISABLE I2C - either do this or use EXTERNAL pull up/downs on pins
+  LPC_GPIO0->DIR |= (1<<4) | (1<<5);
+
+  /*
+  //SWCLK/SWIO/RESET pin as GPIO
+  LPC_GPIO0->DIR |= 1<<10;
+  LPC_IOCON->SWCLK_PIO0_10 = 1;
+  LPC_GPIO1->DIR |= 1<<3;
+  LPC_IOCON->SWDIO_PIO1_3 = 1;
+  LPC_IOCON->RESET_PIO0_0 = 1;
+ */
 
   LPC_IOCON->R_PIO0_11 = (3 << 0/*CT32B0_MAT3*/) | (1 << 7/*ADMODE*/);
 
