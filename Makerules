@@ -56,7 +56,7 @@ else ifeq ($(HAL), LPC1114)
   MCU = cortex-m0
 
   CFLAGS += -mcpu=$(MCU) -mthumb -O1
-  LDFLAGS += -mcpu=$(MCU) -mthumb
+  LDFLAGS += -mcpu=$(MCU) -mthumb -nostartfiles
 
   INCLUDES += \
     -I$(STACK_PATH)/hal/lpc111x/include
