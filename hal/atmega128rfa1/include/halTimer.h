@@ -17,7 +17,7 @@
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
  *
- *   3) Neither the name of the SimpleMesh AUTHORS nor the names of its contributors
+ *   3) Neither the name of the FIP AUTHORS nor the names of its contributors
  *       may be used to endorse or promote products derived from this software
  *       without specific prior written permission.
  *
@@ -34,42 +34,15 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _CONFIG_H_
-#define _CONFIG_H_
+#ifndef _HAL_TIMER_H_
+#define _HAL_TIMER_H_
+
+#include "sysTypes.h"
 
 /*****************************************************************************
 *****************************************************************************/
+void HAL_TimerInit(void);
+uint16_t HAL_GetElapsedTime(void);
 
-#define APP_PORT                       1
-
-#define APP_DEFAULT_ADDR               0xbeef
-#define APP_DEFAULT_PANID              0xABCD
-#define APP_DEFAULT_CHANNEL            0x0f
-#define APP_DEFAULT_RX_STATE           true
-#define APP_DEFAULT_TX_POWER           +3
-#define APP_DEFAULT_ACK_STATE          1
-#define APP_DEFAULT_SECURITY_KEY       "SimpleMesh_12345"
-
-#define APP_DEFAULT_UART_BITS          HAL_UART_BITS_8
-#define APP_DEFAULT_UART_PARITY        HAL_UART_PARITY_NONE
-#define APP_DEFAULT_UART_STOP          HAL_UART_STOP_BITS_1
-#define APP_DEFAULT_UART_BAUDRATE      HAL_UART_BAUDRATE_115200
-
-#define APP_DEFAULT_LED_STATE          0
-
-
-#define NWK_DUPLICATE_REJECTION_TABLE_SIZE      20
-#define NWK_DUPLICATE_REJECTION_TIMER_INTERVAL  1000   // 1 second
-#define NWK_DUPLICATE_REJECTION_TTL             10     // 10 seconds
-#define NWK_ROUTE_TABLE_SIZE                    10
-#define NWK_ROUTE_DEFAULT_SCORE                 3
-#define NWK_ACK_WAIT_TIME                       1000   // 1 second
-#define NWK_MAX_PORTS_AMOUNT                    16
-
-#define SYS_MEM_POOL_SIZE                       2000
-
-
-#define HAL_UART_ENABLE
-
-#endif // _CONFIG_H_
+#endif // _HAL_TIMER_H_
 

@@ -1,0 +1,316 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>6.1</ProjectVersion>
+    <ToolchainName>com.Atmel.AVRGCC8.C</ToolchainName>
+    <ProjectGuid>{fdf0d32b-bddc-4c45-ac28-426910f0a954}</ProjectGuid>
+    <avrdevice>ATmega256RFR2</avrdevice>
+    <avrdeviceseries>none</avrdeviceseries>
+    <OutputType>Executable</OutputType>
+    <Language>C</Language>
+    <OutputFileName>$(MSBuildProjectName)</OutputFileName>
+    <OutputFileExtension>.elf</OutputFileExtension>
+    <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
+    <AssemblyName>rfr2</AssemblyName>
+    <Name>rfr2</Name>
+    <RootNamespace>rfr2</RootNamespace>
+    <ToolchainFlavour>Native</ToolchainFlavour>
+    <KeepTimersRunning>true</KeepTimersRunning>
+    <OverrideVtor>false</OverrideVtor>
+    <OverrideVtorValue>exception_table</OverrideVtorValue>
+    <eraseonlaunchrule>0</eraseonlaunchrule>
+    <ProgFlashFromRam>true</ProgFlashFromRam>
+    <RamSnippetAddress>0x20000000</RamSnippetAddress>
+    <CacheFlash>true</CacheFlash>
+    <UncachedRange />
+    <BootSegment>2</BootSegment>
+    <AsfFrameworkConfig>
+      <framework-data xmlns="">
+        <options />
+        <configurations />
+        <files />
+        <documentation help="" />
+        <offline-documentation help="" />
+        <dependencies>
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.8.1" />
+        </dependencies>
+      </framework-data>
+    </AsfFrameworkConfig>
+    <avrtoolinterface>JTAG</avrtoolinterface>
+    <avrtool>com.atmel.avrdbg.tool.edbg</avrtool>
+    <com_atmel_avrdbg_tool_edbg>
+      <ToolType>com.atmel.avrdbg.tool.edbg</ToolType>
+      <ToolName>XPRO-EDBG</ToolName>
+      <ToolNumber>ATML1784030200003480</ToolNumber>
+      <StimuliFile>
+      </StimuliFile>
+      <Channel>
+        <host>127.0.0.1</host>
+        <port>58127</port>
+        <ssl>False</ssl>
+      </Channel>
+      <ToolOptions>
+        <InterfaceName>JTAG</InterfaceName>
+        <InterfaceProperties>
+          <JtagDbgClock>32000</JtagDbgClock>
+          <SwdClock>4000000</SwdClock>
+          <JtagProgClock>4000000</JtagProgClock>
+          <IspClock>150000</IspClock>
+          <JtagInChain>false</JtagInChain>
+          <JtagEnableExtResetOnStartSession>true</JtagEnableExtResetOnStartSession>
+          <JtagDevicesBefore>
+          </JtagDevicesBefore>
+          <JtagDevicesAfter>
+          </JtagDevicesAfter>
+          <JtagInstrBitsBefore>
+          </JtagInstrBitsBefore>
+          <JtagInstrBitsAfter>
+          </JtagInstrBitsAfter>
+          <PdiClock>4000000</PdiClock>
+          <AWireMaxBaud>7500000</AWireMaxBaud>
+        </InterfaceProperties>
+      </ToolOptions>
+    </com_atmel_avrdbg_tool_edbg>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <ToolchainSettings>
+      <AvrGcc>
+        <avrgcc.common.optimization.RelaxBranches>True</avrgcc.common.optimization.RelaxBranches>
+        <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+        <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+        <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+        <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+        <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+        <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+        <avrgcc.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>NDEBUG</Value>
+          </ListValues>
+        </avrgcc.compiler.symbols.DefSymbols>
+        <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
+        <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+        <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+        <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+        <avrgcc.linker.libraries.Libraries>
+          <ListValues>
+            <Value>libm</Value>
+          </ListValues>
+        </avrgcc.linker.libraries.Libraries>
+      </AvrGcc>
+    </ToolchainSettings>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <ToolchainSettings>
+      <AvrGcc>
+  <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+  <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+  <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+  <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcc.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>DEBUG</Value>
+      <Value>F_CPU=8000000UL</Value>
+      <Value>ATMEGA256RFR2</Value>
+    </ListValues>
+  </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.directories.IncludePaths>
+    <ListValues>
+      <Value>../../../../apps/serial/include</Value>
+      <Value>../../../../hal/atmega256rfr2/include</Value>
+      <Value>../../../../nwk/include</Value>
+      <Value>../../../../phy/atmega256rfr2/include</Value>
+      <Value>../../../../sys/include</Value>
+    </ListValues>
+  </avrgcc.compiler.directories.IncludePaths>
+  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+  <avrgcc.linker.miscellaneous.LinkerFlags>-Wl,--relax</avrgcc.linker.miscellaneous.LinkerFlags>
+  <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
+</AvrGcc>
+    </ToolchainSettings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\apps\serial\include\asf.h">
+      <SubType>compile</SubType>
+      <Link>apps\serial\include\asf.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\apps\serial\include\config.h">
+      <SubType>compile</SubType>
+      <Link>apps\serial\include\config.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\apps\serial\include\led.h">
+      <SubType>compile</SubType>
+      <Link>apps\serial\include\led.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\apps\serial\include\serialApp.h">
+      <SubType>compile</SubType>
+      <Link>apps\serial\include\serialApp.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\apps\serial\src\command.c">
+      <SubType>compile</SubType>
+      <Link>apps\serial\src\command.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\apps\serial\src\ib.c">
+      <SubType>compile</SubType>
+      <Link>apps\serial\src\ib.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\apps\serial\src\serial.c">
+      <SubType>compile</SubType>
+      <Link>apps\serial\src\serial.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\include\hal.h">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\include\hal.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\include\halPhy.h">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\include\halPhy.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\include\halSleep.h">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\include\halSleep.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\include\halTimer.h">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\include\halTimer.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\include\halUart.h">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\include\halUart.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\src\hal.c">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\src\hal.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\src\halPhy.c">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\src\halPhy.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\src\halSleep.c">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\src\halSleep.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\src\halTimer.c">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\src\halTimer.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\hal\atmega256rfr2\src\halUart.c">
+      <SubType>compile</SubType>
+      <Link>hal\atmega256rfr2\src\halUart.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\include\nwk.h">
+      <SubType>compile</SubType>
+      <Link>nwk\include\nwk.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\include\nwkConfig.h">
+      <SubType>compile</SubType>
+      <Link>nwk\include\nwkConfig.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\include\nwkPrivate.h">
+      <SubType>compile</SubType>
+      <Link>nwk\include\nwkPrivate.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\src\nwk.c">
+      <SubType>compile</SubType>
+      <Link>nwk\src\nwk.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\src\nwkDataReq.c">
+      <SubType>compile</SubType>
+      <Link>nwk\src\nwkDataReq.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\src\nwkFrame.c">
+      <SubType>compile</SubType>
+      <Link>nwk\src\nwkFrame.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\src\nwkRoute.c">
+      <SubType>compile</SubType>
+      <Link>nwk\src\nwkRoute.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\src\nwkRx.c">
+      <SubType>compile</SubType>
+      <Link>nwk\src\nwkRx.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\src\nwkSecurity.c">
+      <SubType>compile</SubType>
+      <Link>nwk\src\nwkSecurity.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\nwk\src\nwkTx.c">
+      <SubType>compile</SubType>
+      <Link>nwk\src\nwkTx.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\phy\atmega256rfr2\include\phy.h">
+      <SubType>compile</SubType>
+      <Link>phy\atmega256rfr2\include\phy.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\phy\atmega256rfr2\src\phy.c">
+      <SubType>compile</SubType>
+      <Link>phy\atmega256rfr2\src\phy.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\include\stdbool.h">
+      <SubType>compile</SubType>
+      <Link>sys\include\stdbool.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\include\sysMem.h">
+      <SubType>compile</SubType>
+      <Link>sys\include\sysMem.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\include\sysQueue.h">
+      <SubType>compile</SubType>
+      <Link>sys\include\sysQueue.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\include\sysTaskManager.h">
+      <SubType>compile</SubType>
+      <Link>sys\include\sysTaskManager.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\include\sysTimer.h">
+      <SubType>compile</SubType>
+      <Link>sys\include\sysTimer.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\include\sysTypes.h">
+      <SubType>compile</SubType>
+      <Link>sys\include\sysTypes.h</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\src\sysMem.c">
+      <SubType>compile</SubType>
+      <Link>sys\src\sysMem.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\src\sysQueue.c">
+      <SubType>compile</SubType>
+      <Link>sys\src\sysQueue.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\src\sysTaskManager.c">
+      <SubType>compile</SubType>
+      <Link>sys\src\sysTaskManager.c</Link>
+    </Compile>
+    <Compile Include="..\..\..\sys\src\sysTimer.c">
+      <SubType>compile</SubType>
+      <Link>sys\src\sysTimer.c</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="apps" />
+    <Folder Include="apps\serial" />
+    <Folder Include="apps\serial\include" />
+    <Folder Include="apps\serial\src" />
+    <Folder Include="hal" />
+    <Folder Include="hal\atmega256rfr2" />
+    <Folder Include="hal\atmega256rfr2\include" />
+    <Folder Include="hal\atmega256rfr2\src" />
+    <Folder Include="nwk\include\" />
+    <Folder Include="nwk\src\" />
+    <Folder Include="phy\atmega256rfr2\" />
+    <Folder Include="phy\atmega256rfr2\include\" />
+    <Folder Include="phy\atmega256rfr2\src\" />
+    <Folder Include="sys" />
+    <Folder Include="phy" />
+    <Folder Include="nwk" />
+    <Folder Include="sys\include\" />
+    <Folder Include="sys\src\" />
+  </ItemGroup>
+  <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
+</Project>

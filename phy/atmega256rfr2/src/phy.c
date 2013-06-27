@@ -69,18 +69,9 @@ static uint8_t       phyRxBuffer[128];
 void PHY_Init(void)
 {
   HAL_PhyReset();
-  
-//  uint8_t ethel;
 
   phyWriteRegister(TRX_STATE_REG, TRX_CMD_TRX_OFF);
-//  ethel = phyReadRegister(TRX_STATUS_REG);
-//  ethel &= TRX_STATUS_TRX_STATUS_MASK;
   while (TRX_STATUS_TRX_OFF != (phyReadRegister(TRX_STATUS_REG) & TRX_STATUS_TRX_STATUS_MASK));
-//  while (TRX_STATUS_TRX_OFF != ethel)
-//  {
-//    ethel = phyReadRegister(TRX_STATUS_REG);
-//    ethel &= TRX_STATUS_TRX_STATUS_MASK;
-//  }
 
   phyWriteRegister(CSMA_SEED_0_REG, 0x12); // TODO: should be random
   phyWriteRegister(PHY_TX_PWR_REG, PHY_TX_POWER_3_0_DBM);
