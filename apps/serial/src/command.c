@@ -32,17 +32,19 @@
  *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
- */
+ */                                 
+ 
+ #include "led.h"
 
 #include <stdlib.h>
 #include <string.h>
+#include "phy.h"
 #include "config.h"
 #include "nwk.h"
-#include "phy.h"
 #include "sysTypes.h"
 #include "halUart.h"
-#include "serial.h"
-#include "led.h"
+// ETG #include "serial.h" - Conflicts with AVR Studio 6
+#include "serialApp.h"
 
 /*****************************************************************************
 *****************************************************************************/
@@ -138,22 +140,6 @@ static uint32_t vBaudrates[32] =
   HAL_UART_BAUDRATE_115200,
   HAL_UART_BAUDRATE_230400,
   HAL_UART_BAUDRATE_460800,
-  HAL_UART_BAUDRATE(195, 12, 13), // 2000
-  HAL_UART_BAUDRATE(100, 7, 8),   // 4000
-  HAL_UART_BAUDRATE(50, 7, 8),    // 8000
-  HAL_UART_BAUDRATE(39, 12, 13),  // 10000
-  HAL_UART_BAUDRATE(20, 7, 8),    // 20000
-  HAL_UART_BAUDRATE(13, 12, 13),  // 30000
-  HAL_UART_BAUDRATE(10, 7, 8),    // 40000
-  HAL_UART_BAUDRATE(8, 7, 8),     // 50000
-  HAL_UART_BAUDRATE(7, 11, 14),   // 60000
-  HAL_UART_BAUDRATE(6, 11, 14),   // 70000
-  HAL_UART_BAUDRATE(5, 7, 8),     // 80000
-  HAL_UART_BAUDRATE(5, 2, 3),     // 90000
-  HAL_UART_BAUDRATE(4, 7, 8),     // 100000
-  HAL_UART_BAUDRATE(2, 7, 8),     // 200000
-  HAL_UART_BAUDRATE(2, 1, 4),     // 300000
-  HAL_UART_BAUDRATE(1, 7, 8),     // 400000
 };
 
 static uint8_t vBits[4] =
@@ -175,8 +161,6 @@ static uint8_t vParity[5] =
   HAL_UART_PARITY_NONE,
   HAL_UART_PARITY_ODD,
   HAL_UART_PARITY_EVEN,
-  HAL_UART_PARITY_FORCE_1,
-  HAL_UART_PARITY_FORCE_0,
 };
 
 static AppRespCommand_t response;

@@ -17,7 +17,7 @@
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
  *
- *   3) Neither the name of the SimpleMesh AUTHORS nor the names of its contributors
+ *   3) Neither the name of the FIP AUTHORS nor the names of its contributors
  *       may be used to endorse or promote products derived from this software
  *       without specific prior written permission.
  *
@@ -34,133 +34,75 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <avr/interrupt.h>
 #include <stdlib.h>
-#include "sysTimer.h"
-#include "halTimer.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+//#include "hal.h"
+#include "phy.h"
+#include "halPhy.h"
+#include "sysTaskManager.h"
+
+#include <avr/io.h>
 
 /*****************************************************************************
 *****************************************************************************/
-// ETG To make AVR Studio happy
-void sysTimerTaskHandler(void);
-
-/*****************************************************************************
-*****************************************************************************/
-static SYS_Timer_t *timers = NULL;
-
-/*****************************************************************************
-*****************************************************************************/
-static void placeTimer(SYS_Timer_t *timer)
+inline static void halDelay(uint8_t us)
 {
-  if (timers)
+  for (uint8_t i = 0; i < us; i++) // TODO: do better than this
+    asm("nop");
+}
+
+/*****************************************************************************
+*****************************************************************************/
+void HAL_PhyReset(void)
+{
+  halPhyRstClr();
+  halDelay(10);
+  halPhyRstSet();
+}
+
+/*****************************************************************************
+*****************************************************************************/
+void HAL_PhyInit(void)
+{
+  halPhySlpTrClr();
+
+  halPhyRstSet();
+  
+  IRQ_MASK = ((1 << 3) | (1 << 6)); // setup TRX24_RX_END IRQ and TRX24_TX_END
+}
+
+/*****************************************************************************
+*****************************************************************************/
+ISR(TRX24_RX_END_vect)
+{
+  // TRX_STATE = TRX_CMD_PLL_ON; // Don't wait for this to complete
+  *(uint8_t*)(TRX_REGISTER_BASEADDR + TRX_STATE_REG) = TRX_CMD_PLL_ON;
+  phyRxRssi =  *(int8_t*)(TRX_REGISTER_BASEADDR + PHY_RSSI);
+  phyState = PHY_STATE_RX_IND;
+  SYS_TaskSetInline(PHY_TASK);
+}
+
+/*****************************************************************************
+*****************************************************************************/
+ISR(TRX24_TX_END_vect)
+{
+  if (PHY_STATE_TX_WAIT_END == phyState)
   {
-    SYS_Timer_t *prev = NULL;
-    uint32_t timeout = timer->interval;
+    //TRX_STATE = TRX_CMD_PLL_ON; // Don't wait for this to complete
+    *(uint8_t*)(TRX_REGISTER_BASEADDR + TRX_STATE_REG) = TRX_CMD_PLL_ON;
 
-    for (SYS_Timer_t *t = timers; t; t = t->next)
-    {
-      if (timeout < t->timeout)
-      {
-         t->timeout -= timeout;
-         break;
-      }
-      else
-        timeout -= t->timeout;
-
-      prev = t;
-    }
-
-    timer->timeout = timeout;
-
-    if (prev)
-    {
-      timer->next = prev->next;
-      prev->next = timer;
-    }
-    else
-    {
-      timer->next = timers;
-      timers = timer;
-    }
+    phyState = PHY_STATE_TX_CONFIRM;
+    phyTxStatus = (*(int8_t*)(TRX_REGISTER_BASEADDR + TRX_STATE_REG) >> 5) & 0x07;
+    SYS_TaskSetInline(PHY_TASK);
   }
   else
   {
-    timer->next = NULL;
-    timer->timeout = timer->interval;
-    timers = timer;
+    // Auto ACK transmission completed
   }
 }
 
-/*****************************************************************************
-*****************************************************************************/
-void sysTimerTaskHandler(void)
-{
-  uint32_t elapsed;
 
-  elapsed = HAL_GetElapsedTime();
-
-  while (timers && (timers->timeout <= elapsed))
-  {
-    SYS_Timer_t *timer = timers;
-
-    elapsed -= timers->timeout;
-    timers = timers->next;
-    if (SYS_TIMER_PERIODIC_MODE == timer->mode)
-      placeTimer(timer);
-    timer->handler(timer);
-  }
-
-  if (timers)
-    timers->timeout -= elapsed;
-}
-
-/*****************************************************************************
-*****************************************************************************/
-void SYS_TimerStart(SYS_Timer_t *timer)
-{
-  if (!SYS_TimerStarted(timer))
-    placeTimer(timer);
-}
-
-/*****************************************************************************
-*****************************************************************************/
-void SYS_TimerStop(SYS_Timer_t *timer)
-{
-  SYS_Timer_t *prev = NULL;
-
-  for (SYS_Timer_t *t = timers; t; t = t->next)
-  {
-    if (t == timer)
-    {
-      if (prev)
-        prev->next = t->next;
-      else
-        timers = t->next;
-
-      if (t->next)
-        t->next->timeout += timer->timeout;
-
-      break;
-    }
-    prev = t;
-  }
-}
-
-/*****************************************************************************
-*****************************************************************************/
-bool SYS_TimerStarted(SYS_Timer_t *timer)
-{
-  for (SYS_Timer_t *t = timers; t; t = t->next)
-    if (t == timer)
-      return true;
-  return false;
-}
-
-/*****************************************************************************
-*****************************************************************************/
-void SYS_TimerRestart(SYS_Timer_t *timer)
-{
-  if (SYS_TimerStarted(timer))
-    SYS_TimerStop(timer);
-  SYS_TimerStart(timer);
-}
 

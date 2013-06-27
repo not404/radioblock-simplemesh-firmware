@@ -39,10 +39,19 @@
 #include "config.h"
 #include "sysTypes.h"
 #include "halUart.h"
-#include "serial.h"
+// ETG #include "serial.h" - Conflicts with AVR Studio 6
+#include "serialApp.h"
+
+// ETG
+#include "hal.h"
 
 /*****************************************************************************
 *****************************************************************************/
+
+void appIbSetDefault(void);
+/*****************************************************************************
+*****************************************************************************/
+
 #define VALID_SETTINGS_MARKER  0x706d6953L
 
 #define IAP_ADDRESS            0x1fff1ff1L
@@ -86,6 +95,9 @@ void appIbSetDefault(void)
 *****************************************************************************/
 bool appIbPdsSave(void)
 {
+;
+#if 0 // Use EEPROM for ATMegar256RFR2  
+  
   uint32_t command[5];
   uint32_t result[4];
   uint32_t buffer[FLASH_PAGE_SIZE / sizeof(uint32_t)];
@@ -130,7 +142,7 @@ bool appIbPdsSave(void)
   ATOMIC_SECTION_LEAVE
   if (result[0])
     return false;
-
+#endif // ATMega256RFR2
   return true;
 }
 
@@ -138,7 +150,10 @@ bool appIbPdsSave(void)
 *****************************************************************************/
 void appIbInit(bool defaults)
 {
+	;
+#if 0 // Use EEPROM for ATMegar256RFR2   
   memcpy((uint8_t *)&appIb, (uint8_t *)PDS_FLASH_ADDR, sizeof(appIb));
+#endif // ATMega256RFR2    
   if (defaults || VALID_SETTINGS_MARKER != appIb.valid)
     appIbSetDefault();
 }

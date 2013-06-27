@@ -39,13 +39,17 @@
 #include "nwkConfig.h"
 #include "hal.h"
 
+// ETG
+#include "sysTypes.h"
 /*****************************************************************************
 *****************************************************************************/
-void sysTimerTaskHandler(void);
-void phyTaskHandler(void);
-void nwkTxTaskHandler(void);
-void nwkRxTaskHandler(void);
-void nwkDataReqTaskHandler(void);
+// ETG extern to make AVR Studio happy
+extern void sysTimerTaskHandler(void);
+extern void phyTaskHandler(void);
+extern void nwkTxTaskHandler(void);
+extern void nwkRxTaskHandler(void);
+extern void nwkDataReqTaskHandler(void);
+
 void sysPortTaskHandler(void);
 #ifdef HAL_UART_ENABLE
 void halUartTxTaskHandler(void);

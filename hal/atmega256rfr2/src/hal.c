@@ -34,64 +34,30 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAL_ATMEGA128RFA1
+#include "config.h"
+#include "halTimer.h"
+#include "halPhy.h"
+#include "halUart.h"
+#include "sysTaskManager.h"
+#include "sysTypes.h"
 
 #include <avr/interrupt.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-#include "hal.h"
-#include "sysTaskManager.h"
-
-/*****************************************************************************
-*****************************************************************************/
-#define TIMER_PRESCALER     8
-#define TIMER_INTERVAL      10ul // ms
-
-/*****************************************************************************
-*****************************************************************************/
-static volatile uint8_t timerIrqCount = 0ul;
-
-/*****************************************************************************
-*****************************************************************************/
-static void halTimerInit(void)
-{
-  OCR4A = ((F_CPU / 1000ul) / TIMER_PRESCALER) * TIMER_INTERVAL;
-  TCCR4B = (1 << WGM12);              // CTC mode
-  TCCR4B |= (1 << CS11);              // Prescaler 8
-  TIMSK4 |= (1 << OCIE4A);            // Enable TC4 interrupt
-}
-
-/*****************************************************************************
-*****************************************************************************/
-ISR(TIMER4_COMPA_vect)
-{
-  timerIrqCount++;
-  SYS_TaskSetInline(SYS_TIMER_TASK);
-}
-
-/*****************************************************************************
-*****************************************************************************/
-uint16_t HAL_GetElapsedTime(void)
-{
-  uint8_t cnt;
-
-  ATOMIC_SECTION_ENTER
-    cnt = timerIrqCount;
-    timerIrqCount = 0;
-  ATOMIC_SECTION_LEAVE
-
-  return cnt * TIMER_INTERVAL;
-}
 
 /*****************************************************************************
 *****************************************************************************/
 void HAL_Init(void)
 {
-  halTimerInit();
+  HAL_TimerInit();
+  HAL_PhyInit();
   sei();
 }
 
-#endif // HAL_ATMEGA128RFA1
+/*****************************************************************************
+*****************************************************************************/
+// Just for compatibility with LPC while porting to the MegaRF
+void HAL_WarmReset(void)
+{
+
+}
+
 

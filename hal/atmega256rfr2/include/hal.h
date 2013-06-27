@@ -17,7 +17,7 @@
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
  *
- *   3) Neither the name of the SimpleMesh AUTHORS nor the names of its contributors
+ *   3) Neither the name of the FIP AUTHORS nor the names of its contributors
  *       may be used to endorse or promote products derived from this software
  *       without specific prior written permission.
  *
@@ -34,63 +34,16 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LED_H_
-#define _LED_H_
+#ifndef _HAL_H_
+#define _HAL_H_
 
-#include "hal.h"
-
-#ifdef ATMEGA256RFR2
-  #include <avr/io.h>
-#endif
+//#include <avr/io.h>
+//#include <avr/interrupt.h>
 
 /*****************************************************************************
 *****************************************************************************/
-inline static void ledInit(void)
-{
-#ifdef HAL_LPC1114
-  LPC_GPIO3->DIR |= (1 << 2);
-  LPC_GPIO3->MASKED_ACCESS[(1 << 2)] = (0 << 2);
-#elif defined ATMEGA256RFR2
-	/* Define pull-ups and set outputs high */
-	/* Define directions for port pins */
-	PORTB = (1<<PB4);
-	DDRB = (1<<4);
-#endif
-}
+void HAL_Init(void);
+void HAL_WarmReset(void);
 
-/*****************************************************************************
-*****************************************************************************/
-inline static void ledOn(void)
-{
-#ifdef HAL_LPC1114  
-  LPC_GPIO3->MASKED_ACCESS[(1 << 2)] = (1 << 2);
-#elif defined ATMEGA256RFR2
-  PORTB = (0<<PB4);
-#endif  
-}
-
-/*****************************************************************************
-*****************************************************************************/
-inline static void ledOff(void)
-{
-#ifdef HAL_LPC1114  
-  LPC_GPIO3->MASKED_ACCESS[(1 << 2)] = (0 << 2);
-#elif defined ATMEGA256RFR2
-  PORTB = (1<<PB4);
-#endif  
-}
-
-/*****************************************************************************
-*****************************************************************************/
-inline static void ledToggle(void)
-{
-#ifdef HAL_LPC1114  
-  LPC_GPIO3->MASKED_ACCESS[(1 << 2)] = ~LPC_GPIO3->MASKED_ACCESS[(1 << 2)];
-#elif defined ATMEGA256RFR2
-  PORTB = ~PORTB;
-#endif  
-}
-
-
-#endif // _LED_H_
+#endif // _HAL_H_
 

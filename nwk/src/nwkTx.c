@@ -77,6 +77,11 @@ typedef struct PACK NwkTxAckCommand_t
 
 /*****************************************************************************
 *****************************************************************************/
+// ETG To make AVR Studio happy
+void nwkTxTaskHandler(void);
+
+/*****************************************************************************
+*****************************************************************************/
 static void nwkTxBroadcastConf(NwkFrame_t *frame);
 static void nwkTxStartWaitTimer(NwkFrame_t *frame);
 static void nwkTxWaitTimerHandler(SYS_Timer_t *timer);

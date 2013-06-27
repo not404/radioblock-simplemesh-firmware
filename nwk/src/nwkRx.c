@@ -74,6 +74,11 @@ typedef struct NwkDuplicateRejectionRecord_t
 
 /*****************************************************************************
 *****************************************************************************/
+// ETG To make AVR Studio happy
+void nwkRxTaskHandler(void);
+
+/*****************************************************************************
+*****************************************************************************/
 static void nwkRxSendAckConf(NwkFrame_t *frame);
 static void nwkRxDuplicateRejectionTimerHandler(SYS_Timer_t *timer);
 

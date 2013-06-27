@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2011 - 2012, SimpleMesh AUTHORS
  * Eric Gnoske,
- * Colin O'Flynn
+ * Colin O'Flynn,
  * Blake Leverett,
  * Rob Fries,
  * Colorado Micro Devices Inc..
@@ -35,131 +35,196 @@
  */
 
 #include <stdlib.h>
-#include <stdint.h>
 #include <stdbool.h>
-#include <string.h>
-#include "nwkPrivate.h"
+#include "hal.h"
+#include "halUart.h"
+#include "config.h"
 #include "sysTaskManager.h"
-#include "sysMem.h"
-#include "sysQueue.h"
+#include "sysTypes.h"
+//#include <asf.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
 /*****************************************************************************
 *****************************************************************************/
-enum
+typedef struct
 {
-  NWK_DATA_REQ_STATE_INITIAL,
-  NWK_DATA_REQ_STATE_WAIT_CONF,
-  NWK_DATA_REQ_STATE_CONFIRM,
-};
+  uint16_t  head;
+  uint16_t  tail;
+  uint16_t  size;
+  uint16_t  bytes;
+  uint8_t   *data;
+} FifoBuffer_t;
 
 /*****************************************************************************
 *****************************************************************************/
-// ETG To make AVR Studio happy
-void nwkDataReqTaskHandler(void);
+static FifoBuffer_t txFifo;
+static volatile FifoBuffer_t rxFifo;
+static HAL_Uart_t *halUart = NULL;
 
 /*****************************************************************************
 *****************************************************************************/
-static void nwkDataReqTxConf(NwkFrame_t *frame);
-
-/*****************************************************************************
-*****************************************************************************/
-static SYS_Queue_t *nwkDataReqQueue;
-
-/*****************************************************************************
-*****************************************************************************/
-void nwkDataReqInit(void)
+void HAL_UartInit(HAL_Uart_t *uart)
 {
-  SYS_QueueInit(&nwkDataReqQueue);
+  txFifo.data = uart->txBuffer;
+  txFifo.size = uart->txBufferSize;
+  txFifo.bytes = 0;
+  txFifo.head = 0;
+  txFifo.tail = 0;
+
+  rxFifo.data = uart->rxBuffer;
+  rxFifo.size = uart->rxBufferSize;
+  rxFifo.bytes = 0;
+  rxFifo.head = 0;
+  rxFifo.tail = 0;
+
+  halUart = uart;
+  
+  /* 
+    Just use USART 1, PD2 (Rx) and PD3 (Tx). 
+    We are running from the external 16MHz crystal so 
+    no need to initialize the uart clock...?
+    
+    sysclk_enable_module(POWER_RED_REG1, PRUSART1_bm);
+    
+    And, no need to include <asf.h> stuff.
+  */
+   
+  // Turn on interrupts.
+  UCSR1B = ((1 << RXCIE1) | (1 << TXCIE1));
+  
+  // Running at 8MHz, almost all BAUD settings have error rates.
+  UBRR1 = halUart->baudrate; //HAL_UART_BAUDRATE_115200;
+  
+  // Setup the number of bits, start and stop - 8N1.
+  UCSR1C = ((1 << UCSZ11) | ( 1<< UCSZ10));
+  
+  // Enable.
+  UCSR1B |= ((1 << RXEN1) | (1 << TXEN1));
+    
+  //sei();
 }
 
 /*****************************************************************************
 *****************************************************************************/
-void NWK_DataReq(NWK_DataReq_t *req)
+void HAL_UartClose(void)
 {
-  req->state = NWK_DATA_REQ_STATE_INITIAL;
-  req->status = NWK_SUCCESS_STATUS;
-
-  SYS_QueueAppend(&nwkDataReqQueue, req);
-  SYS_TaskSet(NWK_DATA_REQ_TASK);
-}
-
-/*****************************************************************************
-*****************************************************************************/
-static void nwkDataReqSendFrame(NWK_DataReq_t *req)
-{
-  NwkFrame_t *frame;
-  uint8_t size = req->size;
-
-  if (req->options & NWK_OPT_SECURITY_ENABLED)
-    size += sizeof(uint32_t);
-
-  if (NULL == (frame = nwkFrameAlloc(size)))
+  if (NULL != halUart)
   {
-    req->state = NWK_DATA_REQ_STATE_CONFIRM;
-    req->status = NWK_OUT_OF_MEMORY_STATUS;
-    SYS_TaskSet(NWK_DATA_REQ_TASK);
+		UCSR1B = 0;
+    halUart = NULL;
+    
+  }
+}
+
+/*****************************************************************************
+*****************************************************************************/
+void HAL_UartWriteByte(uint8_t byte)
+{
+  if (txFifo.bytes == txFifo.size)
     return;
-  }
 
-  frame->tx.dataReq = req;
-  frame->tx.confirm = nwkDataReqTxConf;
+  txFifo.data[txFifo.tail++] = byte;
+  if (txFifo.tail == txFifo.size)
+    txFifo.tail = 0;
+  txFifo.bytes++;
 
-  frame->header->nwkFcf.ackRequest = req->options & NWK_OPT_ACK_REQUEST ? 1 : 0;
-  frame->header->nwkFcf.securityEnabled = req->options & NWK_OPT_SECURITY_ENABLED ? 1 : 0;
-  frame->header->nwkFcf.dstPort = req->port;
-  frame->header->nwkFcf.reserved = 0;
-  frame->header->nwkSeq = ++nwkIb.nwkSeqNum;
-  frame->header->nwkSrcAddr = nwkIb.addr;
-  frame->header->nwkDstAddr = req->dst;
-
-  memcpy(frame->payload, req->data, req->size);
-
-  nwkTxFrame(frame);
+  SYS_TaskSet(HAL_UART_TX_TASK);
 }
 
 /*****************************************************************************
 *****************************************************************************/
-static void nwkDataReqTxConf(NwkFrame_t *frame)
+uint8_t HAL_UartReadByte(void)
 {
-  frame->tx.dataReq->status = frame->tx.status;
-  frame->tx.dataReq->state = NWK_DATA_REQ_STATE_CONFIRM;
-  nwkFrameFree(frame);
-  SYS_TaskSet(NWK_DATA_REQ_TASK);
+  uint8_t byte;
+
+  ATOMIC_SECTION_ENTER
+    byte = rxFifo.data[rxFifo.head++];
+    if (rxFifo.head == rxFifo.size)
+      rxFifo.head = 0;
+    rxFifo.bytes--;
+  ATOMIC_SECTION_LEAVE
+
+  return byte;
 }
 
 /*****************************************************************************
 *****************************************************************************/
-void nwkDataReqTaskHandler(void)
+uint16_t HAL_UartGetFreeSize(void)
 {
-  NWK_DataReq_t *req, *next;
+  return (txFifo.size - txFifo.bytes);
+}
 
-  req = SYS_QueueHead(&nwkDataReqQueue);
-  while (req)
+/*****************************************************************************
+*****************************************************************************/
+uint8_t bull[128];
+uint8_t bugbuf[32];
+
+ISR(USART1_RX_vect)
+{
+//  uint8_t tmp;
+//  static uint8_t i=0;
+//  static uint8_t zap = 0;
+  
+//  bugbuf[zap++] = 10;
+//  while (UCSR1A & (1<<RXC1)) // While there is unread data...
+//  {
+    if (rxFifo.bytes == rxFifo.size)
+      //continue;
+      return;
+
+//		tmp = UDR1;
+//    bugbuf[zap++] = 11;
+    
+    rxFifo.data[rxFifo.tail++] = UDR1;
+//    bull[i++] = tmp;
+    if (rxFifo.tail == rxFifo.size)
+      rxFifo.tail = 0;
+    rxFifo.bytes++;
+//  }
+
+//  bugbuf[zap++] = 12;
+  SYS_TaskSet(HAL_UART_RX_TASK);
+
+}
+
+ISR(USART1_TX_vect)
+{
+	SYS_TaskSet(HAL_UART_TX_TASK);
+}
+/*****************************************************************************
+*****************************************************************************/
+void halUartTxTaskHandler(void)
+{
+  if (txFifo.bytes)
   {
-    next = (NWK_DataReq_t *) SYS_QueueNext((void *) req);
+      uint8_t byte;
 
-    switch (req->state)
-    {
-      case NWK_DATA_REQ_STATE_INITIAL:
-      {
-        req->state = NWK_DATA_REQ_STATE_WAIT_CONF;
-        nwkDataReqSendFrame(req);
-      } break;
+      byte = txFifo.data[txFifo.head++];
+      if (txFifo.head == txFifo.size)
+        txFifo.head = 0;
+      txFifo.bytes--;
 
-      case NWK_DATA_REQ_STATE_WAIT_CONF:
-        break;
-
-      case NWK_DATA_REQ_STATE_CONFIRM:
-      {
-        SYS_QueueRemove(&nwkDataReqQueue, req);
-        req->confirm(req);
-      } break;
-
-      default:
-        break;
-    };
-
-    req = next;
+      UDR1 = byte;
   }
+  else
+  {
+    if (NULL != halUart->txCallback)
+      halUart->txCallback();
+  }
+}
+
+/*****************************************************************************
+*****************************************************************************/
+void halUartRxTaskHandler(void)
+{
+  uint16_t bytes;
+
+  ATOMIC_SECTION_ENTER
+    bytes = rxFifo.bytes;
+  ATOMIC_SECTION_LEAVE
+
+  if (NULL != halUart->rxCallback)
+    halUart->rxCallback(bytes);
 }
 

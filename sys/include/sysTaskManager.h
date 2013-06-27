@@ -39,6 +39,7 @@
 
 #include <stdint.h>
 #include "config.h"
+#include "sysTypes.h"
 #include "hal.h"
 
 /*****************************************************************************

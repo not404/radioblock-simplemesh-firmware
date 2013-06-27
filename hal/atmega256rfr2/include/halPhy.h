@@ -17,7 +17,7 @@
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
  *
- *   3) Neither the name of the SimpleMesh AUTHORS nor the names of its contributors
+ *   3) Neither the name of the FIP AUTHORS nor the names of its contributors
  *       may be used to endorse or promote products derived from this software
  *       without specific prior written permission.
  *
@@ -34,133 +34,50 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include "sysTimer.h"
-#include "halTimer.h"
+#ifndef _HAL_PHY_H_
+#define _HAL_PHY_H_
+
+#include "sysTypes.h"
+#include <avr/io.h>
 
 /*****************************************************************************
 *****************************************************************************/
-// ETG To make AVR Studio happy
-void sysTimerTaskHandler(void);
+#define halPhySlpTrSet()       TRXPR |= (1 << 1);
+#define halPhySlpTrClr()       TRXPR &= ~(1 << 1);
+
+#define halPhyRstSet()         TRXPR |= (1 << 0);
+#define halPhyRstClr()         TRXPR &= ~(1 << 0);
+
+#define halPhyIrqSet()         IRQ_MASK |= ((1 << 3) | (1 << 6));
+#define halPhyIrqClr()         IRQ_MASK &= ~((1 << 3) | (1 << 6));
 
 /*****************************************************************************
 *****************************************************************************/
-static SYS_Timer_t *timers = NULL;
+void HAL_PhyInit(void);
+void HAL_PhyReset(void);
 
 /*****************************************************************************
 *****************************************************************************/
-static void placeTimer(SYS_Timer_t *timer)
+INLINE void HAL_PhySlpTrClear(void)
 {
-  if (timers)
-  {
-    SYS_Timer_t *prev = NULL;
-    uint32_t timeout = timer->interval;
-
-    for (SYS_Timer_t *t = timers; t; t = t->next)
-    {
-      if (timeout < t->timeout)
-      {
-         t->timeout -= timeout;
-         break;
-      }
-      else
-        timeout -= t->timeout;
-
-      prev = t;
-    }
-
-    timer->timeout = timeout;
-
-    if (prev)
-    {
-      timer->next = prev->next;
-      prev->next = timer;
-    }
-    else
-    {
-      timer->next = timers;
-      timers = timer;
-    }
-  }
-  else
-  {
-    timer->next = NULL;
-    timer->timeout = timer->interval;
-    timers = timer;
-  }
+  halPhySlpTrClr();
 }
 
 /*****************************************************************************
 *****************************************************************************/
-void sysTimerTaskHandler(void)
+INLINE void HAL_PhySlpTrSet(void)
 {
-  uint32_t elapsed;
-
-  elapsed = HAL_GetElapsedTime();
-
-  while (timers && (timers->timeout <= elapsed))
-  {
-    SYS_Timer_t *timer = timers;
-
-    elapsed -= timers->timeout;
-    timers = timers->next;
-    if (SYS_TIMER_PERIODIC_MODE == timer->mode)
-      placeTimer(timer);
-    timer->handler(timer);
-  }
-
-  if (timers)
-    timers->timeout -= elapsed;
+  halPhySlpTrSet();
 }
 
 /*****************************************************************************
 *****************************************************************************/
-void SYS_TimerStart(SYS_Timer_t *timer)
+INLINE void HAL_PhySlpTrAssert(void)
 {
-  if (!SYS_TimerStarted(timer))
-    placeTimer(timer);
+  halPhySlpTrSet();
+  halPhySlpTrClr();
 }
 
-/*****************************************************************************
-*****************************************************************************/
-void SYS_TimerStop(SYS_Timer_t *timer)
-{
-  SYS_Timer_t *prev = NULL;
 
-  for (SYS_Timer_t *t = timers; t; t = t->next)
-  {
-    if (t == timer)
-    {
-      if (prev)
-        prev->next = t->next;
-      else
-        timers = t->next;
-
-      if (t->next)
-        t->next->timeout += timer->timeout;
-
-      break;
-    }
-    prev = t;
-  }
-}
-
-/*****************************************************************************
-*****************************************************************************/
-bool SYS_TimerStarted(SYS_Timer_t *timer)
-{
-  for (SYS_Timer_t *t = timers; t; t = t->next)
-    if (t == timer)
-      return true;
-  return false;
-}
-
-/*****************************************************************************
-*****************************************************************************/
-void SYS_TimerRestart(SYS_Timer_t *timer)
-{
-  if (SYS_TimerStarted(timer))
-    SYS_TimerStop(timer);
-  SYS_TimerStart(timer);
-}
+#endif // _HAL_PHY_H_
 

@@ -2,19 +2,22 @@
 APP_NAME = simplemesh
 
 #HAL = ATMEGA128RFA1
+HAL = ATMEGA256RFR2
 #HAL = ATMEGA328P
-HAL = LPC1114
+#HAL = LPC1114
 
 #PHY = ATMEGA128RFA1
-PHY = AT86RF230
+PHY = ATMEGA256RFR2
+#PHY = AT86RF230
 #PHY = AT86RF231
 
-#FREQ = 8_MHz
-FREQ = 12_MHz
+FREQ = 8_MHz
+#FREQ = 12_MHz
+#FREQ = 16_MHz
 
-#BOARD = RCB_MEGARF
+BOARD = RCB_MEGARF
 #BOARD = TRT_DISK
-BOARD = RADIOBLOCKS
+#BOARD = RADIOBLOCKS
 
 ##############################################################################
 .PHONY: all clean size

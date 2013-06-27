@@ -46,6 +46,9 @@
 
   #define ATOMIC_SECTION_ENTER   { volatile uint32_t __atomic = __get_PRIMASK(); __disable_irq();
   #define ATOMIC_SECTION_LEAVE   __set_PRIMASK(__atomic); }
+#elif defined ATMEGA256RFR2
+	#define ATOMIC_SECTION_ENTER
+	#define ATOMIC_SECTION_LEAVE
 #endif
 
 #define INLINE                 static inline __attribute__ ((always_inline))

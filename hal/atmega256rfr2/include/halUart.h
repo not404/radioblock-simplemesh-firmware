@@ -34,63 +34,93 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _LED_H_
-#define _LED_H_
+#ifndef _HAL_UART_H_
+#define _HAL_UART_H_
 
-#include "hal.h"
-
-#ifdef ATMEGA256RFR2
-  #include <avr/io.h>
-#endif
+#include "sysTypes.h"
 
 /*****************************************************************************
 *****************************************************************************/
-inline static void ledInit(void)
-{
-#ifdef HAL_LPC1114
-  LPC_GPIO3->DIR |= (1 << 2);
-  LPC_GPIO3->MASKED_ACCESS[(1 << 2)] = (0 << 2);
-#elif defined ATMEGA256RFR2
-	/* Define pull-ups and set outputs high */
-	/* Define directions for port pins */
-	PORTB = (1<<PB4);
-	DDRB = (1<<4);
-#endif
-}
+#define HAL_UART_BAUDRATE(dl, div, mul) ((mul << 20) | (div << 16) | dl)
 
 /*****************************************************************************
 *****************************************************************************/
-inline static void ledOn(void)
+enum
 {
-#ifdef HAL_LPC1114  
-  LPC_GPIO3->MASKED_ACCESS[(1 << 2)] = (1 << 2);
-#elif defined ATMEGA256RFR2
-  PORTB = (0<<PB4);
-#endif  
-}
+	/*UCSZ01 UCSZ00*/
+  HAL_UART_BITS_5 = (1 << 0),
+  HAL_UART_BITS_6 = (1 << 1),
+  HAL_UART_BITS_7 = (2 << 1),
+  HAL_UART_BITS_8 = ((3 << 1) | (2 << 1)),
+};
+
+enum
+{
+	/*USBS1*/
+  HAL_UART_STOP_BITS_1 = (0 << 3),
+  HAL_UART_STOP_BITS_2 = (1 << 3),
+};
+
+enum
+{
+	/*UPM11:10*/
+  HAL_UART_PARITY_NONE    = ((0 << 4) | (0 << 5)),
+  HAL_UART_PARITY_ODD     = ((1 << 4) | (1 << 5)),
+  HAL_UART_PARITY_EVEN    = ((0 << 4) | (1 << 5)),
+};
+
+// If FOSC = 16MHz
+enum
+{
+  HAL_UART_BAUDRATE_AUTO   = 0,
+  HAL_UART_BAUDRATE_50     = 0,
+  HAL_UART_BAUDRATE_75     = 0,
+  HAL_UART_BAUDRATE_110    = 0,
+  HAL_UART_BAUDRATE_150    = 0,
+  HAL_UART_BAUDRATE_300    = 0,
+  HAL_UART_BAUDRATE_1200   = 0,
+  HAL_UART_BAUDRATE_2400   = 0,
+  HAL_UART_BAUDRATE_4800   = 0,
+  HAL_UART_BAUDRATE_9600   = 103,
+  HAL_UART_BAUDRATE_19200  = 51, 
+  HAL_UART_BAUDRATE_38400  = 25,
+  HAL_UART_BAUDRATE_57600  = 16,
+  HAL_UART_BAUDRATE_115200 = 8,
+  HAL_UART_BAUDRATE_230400 = 0,
+  HAL_UART_BAUDRATE_460800 = 0,
+};
+
+
+
+typedef struct HAL_Uart_t
+{
+  uint8_t   bits;
+  uint8_t   parity;
+  uint8_t   stop;
+  uint32_t  baudrate;
+
+  uint8_t   *txBuffer;
+  uint16_t  txBufferSize;
+
+  uint8_t   *rxBuffer;
+  uint16_t  rxBufferSize;
+  void      (*rxCallback)(uint16_t);
+  void      (*txCallback)(void);
+} HAL_Uart_t;
 
 /*****************************************************************************
 *****************************************************************************/
-inline static void ledOff(void)
-{
-#ifdef HAL_LPC1114  
-  LPC_GPIO3->MASKED_ACCESS[(1 << 2)] = (0 << 2);
-#elif defined ATMEGA256RFR2
-  PORTB = (1<<PB4);
-#endif  
-}
+void HAL_UartInit(HAL_Uart_t *uart);
+void HAL_UartClose(void);
+void HAL_UartWriteByte(uint8_t byte);
+uint8_t HAL_UartReadByte(void);
+uint16_t HAL_UartGetFreeSize(void);
+void HAL_UartBytesReceived(uint16_t bytes);
+void HAL_UartTaskHandler(void);
 
-/*****************************************************************************
-*****************************************************************************/
-inline static void ledToggle(void)
-{
-#ifdef HAL_LPC1114  
-  LPC_GPIO3->MASKED_ACCESS[(1 << 2)] = ~LPC_GPIO3->MASKED_ACCESS[(1 << 2)];
-#elif defined ATMEGA256RFR2
-  PORTB = ~PORTB;
-#endif  
-}
-
-
-#endif // _LED_H_
+// ETG To make AVR Stuido happy
+void HAL_UART_IrqHandler(void);
+void halUartRxTaskHandler(void);
+void halUartTxTaskHandler(void);
+#endif // _HAL_UART_H_
 

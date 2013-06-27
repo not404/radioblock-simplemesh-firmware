@@ -34,21 +34,15 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _HAL_H_
-#define _HAL_H_
+#ifndef _HAL_TIMER_H_
+#define _HAL_TIMER_H_
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-
-/*****************************************************************************
-*****************************************************************************/
-#define ATOMIC_SECTION_ENTER   { uint8_t __atomic = SREG; cli();
-#define ATOMIC_SECTION_LEAVE   SREG = __atomic; }
+#include "sysTypes.h"
 
 /*****************************************************************************
 *****************************************************************************/
-void HAL_Init(void);
+void HAL_TimerInit(void);
 uint16_t HAL_GetElapsedTime(void);
 
-#endif // _HAL_H_
+#endif // _HAL_TIMER_H_
 

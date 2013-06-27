@@ -17,7 +17,7 @@
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
  *
- *   3) Neither the name of the SimpleMesh AUTHORS nor the names of its contributors
+ *   3) Neither the name of the FIP AUTHORS nor the names of its contributors
  *       may be used to endorse or promote products derived from this software
  *       without specific prior written permission.
  *
@@ -34,133 +34,55 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdlib.h>
-#include "sysTimer.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include "hal.h"
+#include "sysTaskManager.h"
+#include "sysTypes.h"
 #include "halTimer.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
 
 /*****************************************************************************
 *****************************************************************************/
-// ETG To make AVR Studio happy
-void sysTimerTaskHandler(void);
+#define TIMER_INTERVAL      10ul
+#define TIMER_PRESCALER     8
 
 /*****************************************************************************
 *****************************************************************************/
-static SYS_Timer_t *timers = NULL;
+static volatile uint8_t timerIrqCount = 0ul;
 
 /*****************************************************************************
 *****************************************************************************/
-static void placeTimer(SYS_Timer_t *timer)
+void HAL_TimerInit(void)
 {
-  if (timers)
-  {
-    SYS_Timer_t *prev = NULL;
-    uint32_t timeout = timer->interval;
+  OCR1A = ((F_CPU / 1000ul) / TIMER_PRESCALER) * TIMER_INTERVAL;
+  TCCR1B = (1 << WGM12);              // CTC mode
+  TCCR1B |= (1 << CS11);              // Prescaler 8
+  TIMSK1 |= (1 << OCIE1A);            // Enable TC4 interrupt
+}
 
-    for (SYS_Timer_t *t = timers; t; t = t->next)
-    {
-      if (timeout < t->timeout)
-      {
-         t->timeout -= timeout;
-         break;
-      }
-      else
-        timeout -= t->timeout;
 
-      prev = t;
-    }
-
-    timer->timeout = timeout;
-
-    if (prev)
-    {
-      timer->next = prev->next;
-      prev->next = timer;
-    }
-    else
-    {
-      timer->next = timers;
-      timers = timer;
-    }
-  }
-  else
-  {
-    timer->next = NULL;
-    timer->timeout = timer->interval;
-    timers = timer;
-  }
+/*****************************************************************************
+*****************************************************************************/
+ISR(TIMER1_COMPA_vect)
+{
+  timerIrqCount++;
+  SYS_TaskSetInline(SYS_TIMER_TASK);
 }
 
 /*****************************************************************************
 *****************************************************************************/
-void sysTimerTaskHandler(void)
+uint16_t HAL_GetElapsedTime(void)
 {
-  uint32_t elapsed;
+  uint8_t cnt;
 
-  elapsed = HAL_GetElapsedTime();
+  ATOMIC_SECTION_ENTER
+    cnt = timerIrqCount;
+    timerIrqCount = 0;
+  ATOMIC_SECTION_LEAVE
 
-  while (timers && (timers->timeout <= elapsed))
-  {
-    SYS_Timer_t *timer = timers;
-
-    elapsed -= timers->timeout;
-    timers = timers->next;
-    if (SYS_TIMER_PERIODIC_MODE == timer->mode)
-      placeTimer(timer);
-    timer->handler(timer);
-  }
-
-  if (timers)
-    timers->timeout -= elapsed;
-}
-
-/*****************************************************************************
-*****************************************************************************/
-void SYS_TimerStart(SYS_Timer_t *timer)
-{
-  if (!SYS_TimerStarted(timer))
-    placeTimer(timer);
-}
-
-/*****************************************************************************
-*****************************************************************************/
-void SYS_TimerStop(SYS_Timer_t *timer)
-{
-  SYS_Timer_t *prev = NULL;
-
-  for (SYS_Timer_t *t = timers; t; t = t->next)
-  {
-    if (t == timer)
-    {
-      if (prev)
-        prev->next = t->next;
-      else
-        timers = t->next;
-
-      if (t->next)
-        t->next->timeout += timer->timeout;
-
-      break;
-    }
-    prev = t;
-  }
-}
-
-/*****************************************************************************
-*****************************************************************************/
-bool SYS_TimerStarted(SYS_Timer_t *timer)
-{
-  for (SYS_Timer_t *t = timers; t; t = t->next)
-    if (t == timer)
-      return true;
-  return false;
-}
-
-/*****************************************************************************
-*****************************************************************************/
-void SYS_TimerRestart(SYS_Timer_t *timer)
-{
-  if (SYS_TimerStarted(timer))
-    SYS_TimerStop(timer);
-  SYS_TimerStart(timer);
+  return cnt * TIMER_INTERVAL;
 }
 

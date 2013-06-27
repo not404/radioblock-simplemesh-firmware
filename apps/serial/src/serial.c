@@ -36,6 +36,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "led.h"
 #include "config.h"
 #include "nwk.h"
 #include "phy.h"
@@ -44,8 +45,9 @@
 #include "sysTaskManager.h"
 #include "halUart.h"
 #include "halSleep.h"
-#include "led.h"
-#include "serial.h"
+// ETG #include "serial.h" - Conflicts with AVR Studio 6
+#include "serialApp.h"
+
 
 /*****************************************************************************
 *****************************************************************************/
@@ -513,4 +515,3 @@ int main(void)
 
   return 0;
 }
-

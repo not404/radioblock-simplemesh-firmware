@@ -1,6 +1,11 @@
 ##############################################################################
-CFLAGS += -W -Wall --std=gnu99 -Os
-CFLAGS += -ffunction-sections -fdata-sections -fshort-enums
+ifeq ($(HAL), LPC1114)
+  CFLAGS += -W -Wall --std=gnu99 -Os
+  CFLAGS += -ffunction-sections -fdata-sections -fshort-enums
+else
+  CFLAGS += -Wall --std=gnu99 -Wpointer-arith -mrelax -MD -MP -MF -O1
+  CFLAGS += -ffunction-sections -fdata-sections
+endif
 
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -Wl,-Map=$(APP_NAME).map
@@ -26,6 +31,30 @@ ifeq ($(HAL), ATMEGA128RFA1)
   SRCS += \
     $(STACK_PATH)/hal/atmega128rfa1/src/hal.c
 
+#
+# atmega256rfr2
+#
+else ifeq ($(HAL), ATMEGA256RFR2)
+  CC = avr-gcc
+  OBJCOPY = avr-objcopy
+  SIZE = avr-size
+
+  MCU = atmega256rfr2
+  HAL_PATH = atmega256rfr2
+
+  CFLAGS += -mmcu=$(MCU)
+  LDFLAGS += -mmcu=$(MCU)
+
+  INCLUDES += \
+    -I$(STACK_PATH)/hal/atmega256rfr2/include
+
+  SRCS += \
+    $(STACK_PATH)/hal/atmega256rfr2/src/hal.c \
+    $(STACK_PATH)/hal/atmega256rfr2/src/halTimer.c \
+    $(STACK_PATH)/hal/atmega256rfr2/src/halUart.c \
+    $(STACK_PATH)/hal/atmega256rfr2/src/halSleep.c \
+    $(STACK_PATH)/hal/atmega256rfr2/src/halPhy.c
+    
 #
 # atmega328p
 #
@@ -76,6 +105,8 @@ endif
 ##############################################################################
 ifeq ($(PHY), ATMEGA128RFA1)
   PHY_PATH = atmega128rfa1
+else ifeq ($(PHY), ATMEGA256RFR2)
+  PHY_PATH = atmega256rfr2
 else ifeq ($(PHY), AT86RF230)
   PHY_PATH = at86rf230
 else ifeq ($(PHY), AT86RF231)
@@ -89,6 +120,8 @@ ifeq ($(FREQ), 8_MHz)
   F_CPU = 8000000
 else ifeq ($(FREQ), 12_MHz)
   F_CPU = 12000000
+else ifeq ($(FREQ), 16_MHz)
+  F_CPU = 16000000
 else
   $(error unsupported FREQ)
 endif
@@ -99,7 +132,8 @@ DEFINES += \
   -DPHY_$(PHY) \
   -DBOARD_$(BOARD) \
   -DF_CPU=$(F_CPU) \
-  -DLED_APP
+  -DLED_APP \
+  -DATMEGA256RFR2
 
 INCLUDES += \
   -I$(STACK_PATH)/phy/$(PHY_PATH)/include  \
@@ -118,7 +152,7 @@ SRCS += \
   $(STACK_PATH)/nwk/src/nwkFrame.c \
   $(STACK_PATH)/nwk/src/nwkRoute.c \
   $(STACK_PATH)/nwk/src/nwkRx.c \
-  $(STACK_PATH)/nwk/src/nwkTx.c \
+  $(STACK_PATH)/nwk/src/nwkTx.c
 
 CFLAGS += $(INCLUDES) $(DEFINES)
 

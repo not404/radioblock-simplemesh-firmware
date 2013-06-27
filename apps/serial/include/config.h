@@ -42,7 +42,7 @@
 
 #define APP_PORT                       1
 
-#define APP_DEFAULT_ADDR               0x0000
+#define APP_DEFAULT_ADDR               0xbaad
 #define APP_DEFAULT_PANID              0xABCD
 #define APP_DEFAULT_CHANNEL            0x0f
 #define APP_DEFAULT_RX_STATE           true
