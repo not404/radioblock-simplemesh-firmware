@@ -162,30 +162,16 @@ uint8_t bugbuf[32];
 
 ISR(USART1_RX_vect)
 {
-//  uint8_t tmp;
-//  static uint8_t i=0;
-//  static uint8_t zap = 0;
+  if (rxFifo.bytes == rxFifo.size)
+    return;
+
+  rxFifo.data[rxFifo.tail++] = UDR1;
   
-//  bugbuf[zap++] = 10;
-//  while (UCSR1A & (1<<RXC1)) // While there is unread data...
-//  {
-    if (rxFifo.bytes == rxFifo.size)
-      //continue;
-      return;
-
-//		tmp = UDR1;
-//    bugbuf[zap++] = 11;
+  if (rxFifo.tail == rxFifo.size)
+    rxFifo.tail = 0;
+  rxFifo.bytes++;
     
-    rxFifo.data[rxFifo.tail++] = UDR1;
-//    bull[i++] = tmp;
-    if (rxFifo.tail == rxFifo.size)
-      rxFifo.tail = 0;
-    rxFifo.bytes++;
-//  }
-
-//  bugbuf[zap++] = 12;
   SYS_TaskSet(HAL_UART_RX_TASK);
-
 }
 
 ISR(USART1_TX_vect)
